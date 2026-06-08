@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.safe-pb {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+/* Shadows */
+.card-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(109, 40, 217, 0.07);
+}
+
+.card-shadow-sm {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Gradients */
+.gradient-primary {
+  background: linear-gradient(145deg, #6d28d9 0%, #4f46e5 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(145deg, #059669 0%, #0d9488 100%);
+}
+
+.gradient-info {
+  background: linear-gradient(145deg, #2563eb 0%, #6d28d9 100%);
+}
+
+.gradient-warning {
+  background: linear-gradient(145deg, #d97706 0%, #dc2626 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(145deg, #1e1b4b 0%, #312e81 100%);
+}
+
+/* Button press feedback */
+.btn-press {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+/* Shimmer loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* Slide up animation */
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease forwards;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.25s ease forwards;
+}
+
+/* Hide scrollbar tapi tetap bisa scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pulse ring animation */
+@keyframes pulseRing {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulseRing 1.5s ease-out infinite;
+}

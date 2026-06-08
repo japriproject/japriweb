@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model members {
+  id               Int       @id @default(autoincrement())
+  prakerja         Int       @default(0)
+  sender           String    @db.VarChar(175)
+  reff             Int       @unique(map: "reff")
+  name             String    @db.VarChar(125)
+  phone            String    @unique(map: "unique_phone") @db.VarChar(20)
+  email            String    @db.VarChar(100)
+  jumlah_transaksi Int       @default(0) @db.UnsignedInt
+  jumlah_topup     Int       @default(0)
+  id_merchant      Int       @default(0)
+  password         String    @db.Text
+  upline           Int       @default(0)
+  login_status     Int       @default(0)
+  date_login       DateTime? @db.DateTime(0)
+  date_logout      DateTime? @db.DateTime(0)
+  address          String    @default("") @db.Text
+  provinsi         String    @default("") @db.Text
+  kabupaten        String    @default("") @db.Text
+  kecamatan        String    @default("") @db.Text
+  kelurahan        String    @default("") @db.Text
+  saldo            String    @default("0") @db.VarChar(100)
+  status           Int       @default(1)
+  saham            Int       @default(0)
+  created_at       DateTime  @default(now()) @db.Timestamp(0)
+  tanggal_daftar   DateTime  @default(now()) @db.Date
+  device           String    @default("") @db.Text
+  token            String    @default("") @db.Text
+  secret           String    @default("") @db.Text
+  jabber           String    @default("") @db.Text
+  type             Int       @default(0)
+  perusahaan       String    @default("") @db.VarChar(300)
+  alamat           String    @default("") @db.Text
+  foto             String    @default("") @db.VarChar(300)
+  grup             String    @default("") @db.Text
+  ip_address       String    @default("") @db.Text
+  url              String    @default("") @db.Text
+  semen            Int       @default(0)
+  sososo           Int       @default(0)
+  bobobo           Int       @default(0)
+  tugas            Int       @default(0)
+  tgl_lahir        DateTime  @default(now()) @db.Date
+  transaksi        transaksi[]
+}
+
+model pulsa {
+  id       Int    @id @default(autoincrement())
+  code     String @db.VarChar(100)
+  name     String @db.VarChar(100)
+  kategori String @db.VarChar(100)
+  jenis    String @db.Text
+  stats    Int    @default(0)
+  brand    String @db.VarChar(100)
+  price    Int
+  sale     Int
+  members  Int    @default(0)
+  status   String @db.VarChar(15)
+  desc     String @db.Text
+}
+
+model pasca {
+  id       Int    @id @default(autoincrement())
+  code     String @db.VarChar(100)
+  name     String @db.VarChar(100)
+  kategori String @db.VarChar(100)
+  brand    String @db.VarChar(100)
+  admin    Int
+  price    Int
+  sale     Int
+  members  Int    @default(0)
+  status   String @db.VarChar(15)
+  desc     String @db.Text
+}
+
+model transaksi {
+  id            Int       @id @default(autoincrement())
+  invoice       String    @db.VarChar(100)
+  members       String    @db.VarChar(75)
+  product       String    @db.VarChar(45)
+  customers     String    @db.VarChar(35)
+  sale          Int       @db.UnsignedInt
+  price         Int       @db.UnsignedInt
+  admin         Int       @default(0) @db.UnsignedInt
+  status        Int       @default(0)
+  desc          String?   @db.Text
+  sn            String?   @db.Text
+  created_at    DateTime  @default(now()) @db.Timestamp(0)
+  date          DateTime? @db.Date
+  updated_at    DateTime? @db.Timestamp(0)
+  type          Int       @default(0)
+  claim         Int       @default(0)
+  status_update Int       @default(0)
+  migrasi       Int       @default(0)
+  member        members?  @relation(fields: [members], references: [phone])
+
+  @@index([members, invoice, price], map: "idx_members_invoice_price")
+  @@index([members, invoice, type], map: "idx_members_invoice_type")
+  @@index([members, status, type, status_update], map: "idx_members_status_type")
+  @@index([price, sale, status], map: "idx_price_sale_status")
+  @@index([members, status, status_update, type, sale], map: "idx_transaksi")
+  @@index([members, status, status_update], map: "idx_transaksi_bonus")
+  @@index([members, status, status_update], map: "idx_transaksi_claim")
+  @@index([members, status, status_update], map: "idx_transaksi_deposit")
+  @@index([members, status, status_update], map: "idx_transaksi_kirim")
+  @@index([type, status, date, product, customers, members], map: "idx_transaksi_main")
+  @@index([members, status, status_update], map: "idx_transaksi_pengeluaran")
+  @@index([type, status, members, id], map: "idx_transaksi_query")
+  @@index([members, status, status_update], map: "idx_transaksi_rekap_saldo")
+  @@index([type, status, created_at], map: "idx_type_status_created_at")
+}
+
+model gift {
+  id              Int       @id @default(autoincrement())
+  type            Float
+  members         String?   @db.VarChar(20)
+  code            String?   @db.VarChar(100)
+  id_card_numbers String?   @db.VarChar(100)
+  id_card         String    @db.VarChar(175)
+  status          Int?
+  created_at      DateTime  @default(now()) @db.Timestamp(0)
+  updated_at      DateTime? @db.Timestamp(0)
+}
