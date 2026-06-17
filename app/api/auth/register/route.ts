@@ -10,6 +10,7 @@ const schema = z.object({
   noHp: z.string().regex(/^08[0-9]{8,11}$/, 'Format nomor HP tidak valid'),
   password: z.string().min(8, 'Password minimal 8 karakter'),
   email: z.string().email().optional().or(z.literal('')),
+  refCode: z.string().regex(/^[0-9]+$/, 'Kode referral tidak valid').optional().or(z.literal('')),
 })
 
 export async function POST(req: NextRequest) {
@@ -22,10 +23,18 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
 
-  const { nama, noHp, password, email } = parsed.data
+  const { nama, noHp, password, email, refCode } = parsed.data
 
   const exists = await prisma.members.findUnique({ where: { phone: noHp } })
   if (exists) return NextResponse.json({ error: 'Nomor HP sudah terdaftar' }, { status: 409 })
+
+  let upline = 0
+  if (refCode) {
+    const refNumber = Number(refCode)
+    const uplineMember = await prisma.members.findUnique({ where: { reff: refNumber } })
+    if (!uplineMember) return NextResponse.json({ error: 'Kode referral tidak ditemukan' }, { status: 400 })
+    upline = refNumber
+  }
 
   // Generate reff unik
   const lastMember = await prisma.members.findFirst({ orderBy: { reff: 'desc' } })
@@ -41,6 +50,7 @@ export async function POST(req: NextRequest) {
       password: hash,
       sososo: 0,
       reff,
+      upline,
       sender: '',
       status: 1,
       type: 0,

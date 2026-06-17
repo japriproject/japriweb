@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'crypto'
+import { createHash, timingSafeEqual } from 'crypto'
 
 const DEFAULT_DUITKU_APP_URL = 'https://host.duniakreasi.biz.id'
 
@@ -48,10 +48,6 @@ function getConfig() {
 
 function md5(value: string) {
   return createHash('md5').update(value).digest('hex')
-}
-
-function hmacSha256(value: string, key: string) {
-  return createHmac('sha256', key).update(value).digest('hex')
 }
 
 export async function createDuitkuInvoice(input: CreateDuitkuInvoiceInput): Promise<DuitkuInvoice> {
@@ -140,8 +136,8 @@ export function verifyDuitkuCallback(merchantCode: string, amount: string, order
   const merchantKey = process.env.DUITKU_MERCHANT_KEY
   if (!merchantKey) return false
 
-  const expected = hmacSha256(merchantCode + amount + orderId, merchantKey)
-  const a = Buffer.from(signature)
+  const expected = md5(merchantCode + amount + orderId + merchantKey)
+  const a = Buffer.from(signature.toLowerCase())
   const b = Buffer.from(expected)
   return a.length === b.length && timingSafeEqual(a, b)
 }

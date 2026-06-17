@@ -12,11 +12,22 @@ export async function POST(req: NextRequest) {
   const reference = String(form.get('reference') ?? '')
   const signature = String(form.get('signature') ?? '')
 
+  console.log('Duitku callback received:', {
+    merchantCode,
+    amount,
+    merchantOrderId,
+    resultCode,
+    reference,
+    hasSignature: Boolean(signature),
+  })
+
   if (!merchantCode || !amount || !merchantOrderId || !signature) {
+    console.warn('Duitku callback bad payload:', { merchantCode, amount, merchantOrderId, hasSignature: Boolean(signature) })
     return NextResponse.json({ error: 'Bad payload' }, { status: 400 })
   }
 
   if (!verifyDuitkuCallback(merchantCode, amount, merchantOrderId, signature)) {
+    console.warn('Duitku callback invalid signature:', { merchantCode, amount, merchantOrderId, signature })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
@@ -35,7 +46,10 @@ export async function POST(req: NextRequest) {
     `
 
     const trx = rows[0]
-    if (!trx) return
+    if (!trx) {
+      console.warn('Duitku callback invoice not found:', { merchantOrderId })
+      return
+    }
 
     const nextStatus = resultCode === '00' ? 1 : 2
     await tx.transaksi.update({
@@ -63,5 +77,6 @@ export async function POST(req: NextRequest) {
     }
   })
 
+  console.log('Duitku callback processed:', { merchantOrderId, resultCode, reference })
   return new NextResponse('SUCCESS', { status: 200 })
 }

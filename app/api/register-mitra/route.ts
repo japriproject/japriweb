@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createHash } from 'crypto'
+import { normalizePhone, verifyOtp } from '@/lib/otp'
 
 export async function POST(req: Request) {
   try {
@@ -23,14 +24,19 @@ export async function POST(req: Request) {
 
     const uplineReff = uplineData[0].reff
 
-    const { name, phone, email, password } = await req.json()
+    const { name, phone, email, password, otp } = await req.json()
+    const normalizedPhone = normalizePhone(String(phone || ''))
 
-    if (!name || !phone || !email || !password) {
+    if (!name || !normalizedPhone || !email || !password || !otp) {
       return NextResponse.json({ error: 'Semua field harus diisi' }, { status: 400 })
     }
 
+    if (!verifyOtp(normalizedPhone, String(otp))) {
+      return NextResponse.json({ error: 'OTP tidak valid atau sudah kadaluarsa' }, { status: 400 })
+    }
+
     const existingUser = await prisma.$queryRaw<Array<{ id: number }>>`
-      SELECT id FROM members WHERE phone = ${phone} LIMIT 1
+      SELECT id FROM members WHERE phone = ${normalizedPhone} LIMIT 1
     `
 
     if (existingUser && existingUser.length > 0) {
@@ -46,7 +52,7 @@ export async function POST(req: Request) {
 
     await prisma.$executeRaw`
       INSERT INTO members (name, phone, email, password, upline, reff, sender, status, created_at, tanggal_daftar)
-      VALUES (${name}, ${phone}, ${email}, ${hashedPassword}, ${uplineReff}, ${newReff}, '', 1, NOW(), CURDATE())
+      VALUES (${name}, ${normalizedPhone}, ${email}, ${hashedPassword}, ${uplineReff}, ${newReff}, '', 1, NOW(), CURDATE())
     `
 
     return NextResponse.json({ success: true, message: 'Mitra berhasil didaftarkan' })

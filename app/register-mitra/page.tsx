@@ -1,24 +1,49 @@
 'use client'
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, UserPlus, Loader2, AlertCircle, CheckCircle2, Phone, Mail, User, Lock } from 'lucide-react'
+import { ArrowLeft, UserPlus, Loader2, AlertCircle, CheckCircle2, Phone, Mail, User, Lock, KeyRound, Send } from 'lucide-react'
 
 export default function RegisterMitraPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [otpSent, setOtpSent] = useState(false)
+  const [devOtp, setDevOtp] = useState('')
 
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     password: '',
+    otp: '',
   })
+
+  async function requestOtp() {
+    setError('')
+    setLoading(true)
+
+    const res = await fetch('/api/register-mitra/otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+    const d = await res.json().catch(() => ({}))
+
+    setLoading(false)
+
+    if (!res.ok) return setError(d.error || 'Gagal mengirim OTP')
+
+    setOtpSent(true)
+    if (d.devOtp) setDevOtp(d.devOtp)
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    if (!otpSent) return requestOtp()
+    if (!formData.otp.trim()) return setError('Masukkan kode OTP yang dikirim ke nomor mitra')
+
     setLoading(true)
 
     const res = await fetch('/api/register-mitra', {
@@ -106,7 +131,11 @@ export default function RegisterMitraPage() {
                 type="tel"
                 required
                 value={formData.phone}
-                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                onChange={e => {
+                  setFormData({ ...formData, phone: e.target.value, otp: '' })
+                  setOtpSent(false)
+                  setDevOtp('')
+                }}
                 placeholder="08xxxxxxxxxx"
                 className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 text-sm font-medium transition-all"
               />
@@ -144,13 +173,46 @@ export default function RegisterMitraPage() {
             </div>
           </div>
 
+          {otpSent && (
+            <div>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Kode OTP</label>
+              <div className="relative">
+                <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  required
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={formData.otp}
+                  onChange={e => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
+                  placeholder="6 digit OTP"
+                  className="w-full pl-10 pr-4 py-3.5 bg-emerald-50 border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 text-sm font-bold tracking-widest transition-all"
+                />
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="text-xs text-emerald-600 font-medium">
+                  OTP sudah dikirim ke nomor mitra.
+                  {devOtp ? ` Kode dev: ${devOtp}` : ''}
+                </p>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={requestOtp}
+                  className="text-xs font-bold text-emerald-700 disabled:text-gray-400"
+                >
+                  Kirim ulang
+                </button>
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 disabled:from-gray-100 disabled:to-gray-100 disabled:text-gray-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 btn-press shadow-lg shadow-emerald-500/30 disabled:shadow-none"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
-            {loading ? 'Mendaftarkan...' : 'Daftarkan Mitra'}
+            {loading ? <Loader2 size={18} className="animate-spin" /> : otpSent ? <UserPlus size={18} /> : <Send size={18} />}
+            {loading ? (otpSent ? 'Mendaftarkan...' : 'Mengirim OTP...') : otpSent ? 'Daftarkan Mitra' : 'Kirim OTP'}
           </button>
         </form>
       </div>

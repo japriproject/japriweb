@@ -1,12 +1,14 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { User, Phone, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, UserPlus, Loader2 } from 'lucide-react'
+import { User, Phone, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, UserPlus, Loader2, Link as LinkIcon } from 'lucide-react'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
-  const [form, setForm] = useState({ nama: '', noHp: '', email: '', password: '', konfirmasi: '' })
+  const searchParams = useSearchParams()
+  const referralFromLink = searchParams.get('ref')?.trim() || ''
+  const [form, setForm] = useState({ nama: '', noHp: '', email: '', password: '', konfirmasi: '', refCode: referralFromLink })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -20,7 +22,13 @@ export default function RegisterPage() {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama: form.nama, noHp: form.noHp, email: form.email, password: form.password }),
+      body: JSON.stringify({
+        nama: form.nama,
+        noHp: form.noHp,
+        email: form.email,
+        password: form.password,
+        refCode: referralFromLink || form.refCode,
+      }),
     })
     const data = await res.json()
     setLoading(false)
@@ -67,6 +75,34 @@ export default function RegisterPage() {
                 </div>
               </div>
             ))}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                {referralFromLink ? 'Referral dari Link' : 'Kode Referral (opsional)'}
+              </label>
+              <div className="relative">
+                <LinkIcon
+                  size={16}
+                  className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${referralFromLink ? 'text-violet-500' : 'text-gray-400'}`}
+                />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  readOnly={!!referralFromLink}
+                  value={referralFromLink || form.refCode}
+                  onChange={e => setForm(p => ({ ...p, refCode: e.target.value.replace(/\D/g, '') }))}
+                  placeholder="Masukkan kode referral"
+                  className={`w-full pl-10 pr-4 py-3.5 border rounded-xl focus:outline-none text-sm font-medium transition-all ${
+                    referralFromLink
+                      ? 'bg-violet-50 border-violet-200 text-violet-700 cursor-not-allowed'
+                      : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500'
+                  }`}
+                />
+              </div>
+              {referralFromLink && (
+                <p className="text-xs text-violet-600 font-medium">Kode ini otomatis dari link referral dan tidak bisa diubah.</p>
+              )}
+            </div>
 
             {(['password', 'konfirmasi'] as const).map(key => (
               <div key={key} className="space-y-1.5">
@@ -120,5 +156,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <RegisterForm />
+    </Suspense>
   )
 }
