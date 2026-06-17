@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
-import { formatRupiah } from '@/lib/utils'
+import { detectBrand, formatRupiah } from '@/lib/utils'
 import { ArrowLeft, CheckCircle2, Loader2, AlertCircle, ShieldCheck, Wallet, ChevronDown, Phone } from 'lucide-react'
 
 type Produk = {
@@ -13,21 +13,6 @@ type Produk = {
   brand: string
   price: number
   sale: number
-}
-
-const OPERATOR_PREFIXES: Record<string, string> = {
-  '0811': 'TELKOMSEL', '0812': 'TELKOMSEL', '0813': 'TELKOMSEL', '0821': 'TELKOMSEL', '0822': 'TELKOMSEL', '0823': 'TELKOMSEL',
-  '0831': 'TELKOMSEL', '0832': 'TELKOMSEL', '0833': 'TELKOMSEL', '0852': 'TELKOMSEL', '0853': 'TELKOMSEL', '0854': 'TELKOMSEL',
-  '0855': 'TELKOMSEL', '0856': 'TELKOMSEL', '0857': 'TELKOMSEL', '0858': 'TELKOMSEL',
-  '0814': 'XL', '0815': 'XL', '0816': 'XL',
-  '0817': 'INDOSAT', '0818': 'INDOSAT', '0819': 'INDOSAT', '0859': 'INDOSAT', '0860': 'INDOSAT', '0861': 'INDOSAT', '0862': 'INDOSAT', '0863': 'INDOSAT', '0864': 'INDOSAT', '0865': 'INDOSAT', '0866': 'INDOSAT', '0867': 'INDOSAT', '0868': 'INDOSAT',
-  '0898': 'TRI', '0899': 'TRI',
-  '0881': 'SMARTFREN', '0882': 'SMARTFREN', '0883': 'SMARTFREN', '0884': 'SMARTFREN', '0885': 'SMARTFREN', '0886': 'SMARTFREN', '0887': 'SMARTFREN', '0888': 'SMARTFREN', '0889': 'SMARTFREN',
-}
-
-function detectBrand(phone: string): string | null {
-  const prefix = phone.substring(0, 4)
-  return OPERATOR_PREFIXES[prefix] || null
 }
 
 export default function PulsaPage() {
@@ -90,24 +75,11 @@ export default function PulsaPage() {
   }
 
   const visibleProduks = showAll ? produks : produks.slice(0, 6)
+  /*
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-6 bg-slate-50">
-      <div className="bg-white rounded-3xl p-8 card-shadow border border-gray-100 w-full text-center fade-in">
-        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 size={40} className="text-emerald-500" />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">Transaksi Berhasil!</h2>
-        <p className="text-gray-400 text-sm mt-1">{selected?.name}</p>
         <p className="text-sm text-gray-500">→ {noHp}</p>
-        <div className="mt-5 pt-5 border-t border-gray-50">
-          <p className="text-2xl font-bold text-emerald-600">{formatRupiah(selected?.sale ?? 0)}</p>
-          <p className="text-xs text-gray-400 mt-1">Mengarahkan ke riwayat...</p>
-        </div>
-      </div>
-    </div>
-  )
 
+  */
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 safe-pb">
       {/* Header */}

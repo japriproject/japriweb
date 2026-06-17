@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
-import { formatRupiah } from '@/lib/utils'
+import { detectBrand, formatRupiah } from '@/lib/utils'
 import { ArrowLeft, Wifi, CheckCircle2, Loader2, AlertCircle, Wallet, ShieldCheck, ChevronDown, Phone } from 'lucide-react'
 
 type Produk = {
@@ -13,21 +13,6 @@ type Produk = {
   brand: string
   price: number
   sale: number
-}
-
-const OPERATOR_PREFIXES: Record<string, string> = {
-  '0811': 'TELKOMSEL', '0812': 'TELKOMSEL', '0813': 'TELKOMSEL', '0821': 'TELKOMSEL', '0822': 'TELKOMSEL', '0823': 'TELKOMSEL',
-  '0831': 'TELKOMSEL', '0832': 'TELKOMSEL', '0833': 'TELKOMSEL', '0852': 'TELKOMSEL', '0853': 'TELKOMSEL', '0854': 'TELKOMSEL',
-  '0855': 'TELKOMSEL', '0856': 'TELKOMSEL', '0857': 'TELKOMSEL', '0858': 'TELKOMSEL',
-  '0814': 'XL', '0815': 'XL', '0816': 'XL',
-  '0817': 'INDOSAT', '0818': 'INDOSAT', '0819': 'INDOSAT', '0859': 'INDOSAT', '0860': 'INDOSAT', '0861': 'INDOSAT', '0862': 'INDOSAT', '0863': 'INDOSAT', '0864': 'INDOSAT', '0865': 'INDOSAT', '0866': 'INDOSAT', '0867': 'INDOSAT', '0868': 'INDOSAT',
-  '0898': 'TRI', '0899': 'TRI',
-  '0881': 'SMARTFREN', '0882': 'SMARTFREN', '0883': 'SMARTFREN', '0884': 'SMARTFREN', '0885': 'SMARTFREN', '0886': 'SMARTFREN', '0887': 'SMARTFREN', '0888': 'SMARTFREN', '0889': 'SMARTFREN',
-}
-
-function detectBrand(phone: string): string | null {
-  const prefix = phone.substring(0, 4)
-  return OPERATOR_PREFIXES[prefix] || null
 }
 
 export default function PaketDataPage() {
