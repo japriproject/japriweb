@@ -6,19 +6,73 @@ export function formatDate(date: Date | string) {
   return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(date))
 }
 
-export function detectOperator(noHp: string): string {
+const OPERATOR_PREFIXES: Record<string, string> = {
+  '0811': 'TELKOMSEL',
+  '0812': 'TELKOMSEL',
+  '0813': 'TELKOMSEL',
+  '0821': 'TELKOMSEL',
+  '0822': 'TELKOMSEL',
+  '0823': 'TELKOMSEL',
+  '0851': 'TELKOMSEL',
+  '0852': 'TELKOMSEL',
+  '0853': 'TELKOMSEL',
+  '0814': 'INDOSAT',
+  '0815': 'INDOSAT',
+  '0816': 'INDOSAT',
+  '0855': 'INDOSAT',
+  '0856': 'INDOSAT',
+  '0857': 'INDOSAT',
+  '0858': 'INDOSAT',
+  '0817': 'XL',
+  '0818': 'XL',
+  '0819': 'XL',
+  '0859': 'XL',
+  '0877': 'XL',
+  '0878': 'XL',
+  '0879': 'XL',
+  '0831': 'AXIS',
+  '0832': 'AXIS',
+  '0833': 'AXIS',
+  '0838': 'AXIS',
+  '0895': 'TRI',
+  '0896': 'TRI',
+  '0897': 'TRI',
+  '0898': 'TRI',
+  '0899': 'TRI',
+  '0881': 'SMARTFREN',
+  '0882': 'SMARTFREN',
+  '0883': 'SMARTFREN',
+  '0884': 'SMARTFREN',
+  '0885': 'SMARTFREN',
+  '0886': 'SMARTFREN',
+  '0887': 'SMARTFREN',
+  '0888': 'SMARTFREN',
+  '0889': 'SMARTFREN',
+}
+
+const OPERATOR_LABELS: Record<string, string> = {
+  TELKOMSEL: 'Telkomsel',
+  INDOSAT: 'Indosat',
+  XL: 'XL',
+  AXIS: 'Axis',
+  TRI: 'Tri',
+  SMARTFREN: 'Smartfren',
+}
+
+function normalizePhonePrefix(noHp: string) {
   const clean = noHp.replace(/\D/g, '')
-  const prefix = clean.substring(0, 4)
-  const telkomsel = ['0811','0812','0813','0821','0822','0823','0851','0852','0853']
-  const xl = ['0817','0818','0819','0859','0877','0878']
-  const indosat = ['0814','0815','0816','0855','0856','0857','0858']
-  const tri = ['0895','0896','0897','0898','0899']
-  const smartfren = ['0881','0882','0883','0884','0885','0886','0887','0888','0889']
-  if (telkomsel.includes(prefix)) return 'Telkomsel'
-  if (xl.includes(prefix)) return 'XL'
-  if (indosat.includes(prefix)) return 'Indosat'
-  if (tri.includes(prefix)) return 'Tri'
-  if (smartfren.includes(prefix)) return 'Smartfren'
+  const local = clean.startsWith('62') ? `0${clean.slice(2)}` : clean
+  return local.substring(0, 4)
+}
+
+export function detectBrand(noHp: string): string | null {
+  const prefix = normalizePhonePrefix(noHp)
+  return OPERATOR_PREFIXES[prefix] || null
+}
+
+export function detectOperator(noHp: string): string {
+  const brand = detectBrand(noHp)
+  if (brand) return OPERATOR_LABELS[brand] || brand
   return 'Unknown'
 }
 
