@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { PendingStatusRefresher } from './PendingStatusRefresher'
 
+export const dynamic = 'force-dynamic'
+
 const statusConfig: Record<number, { label: string; icon: React.ComponentType<any>; bg: string; text: string; border: string }> = {
   1: { label: 'Sukses', icon: CheckCircle2, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   0: { label: 'Pending', icon: Clock, bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },

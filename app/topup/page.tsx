@@ -36,7 +36,7 @@ type PaymentResponse = {
   bankName?: string
   accountNumber?: string
   accountName?: string
-  status: string
+  status: 'PENDING' | 'SUKSES' | 'GAGAL' | string
 }
 
 function getMethodIcon(method: PaymentMethod) {
@@ -108,15 +108,61 @@ export default function TopupPage() {
       ? paymentData.qrUrl
     : null
 
+  useEffect(() => {
+    if (!success || !paymentData || paymentData.status !== 'PENDING') return
+
+    let cancelled = false
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`/api/topup/status?invoice=${encodeURIComponent(paymentData.invoice)}`, {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled || !data?.status || data.status === 'PENDING') return
+        setPaymentData(current => current ? {
+          ...current,
+          status: data.status,
+          reference: data.reference || current.reference,
+        } : current)
+        if (data.status === 'SUKSES') router.refresh()
+      } catch {
+        // Tetap polling; callback provider bisa terlambat beberapa detik.
+      }
+    }
+
+    checkStatus()
+    const interval = window.setInterval(checkStatus, 5000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [paymentData, router, success])
+
   if (success && paymentData) {
+    const paymentSuccess = paymentData.status === 'SUKSES'
+    const paymentFailed = paymentData.status === 'GAGAL'
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-6 bg-slate-50">
         <div className="bg-white rounded-3xl p-8 card-shadow border border-gray-100 w-full fade-in">
-          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Wallet size={40} className="text-amber-500" />
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
+            paymentSuccess ? 'bg-emerald-100' : paymentFailed ? 'bg-red-100' : 'bg-amber-100'
+          }`}>
+            {paymentSuccess ? (
+              <CheckCircle2 size={40} className="text-emerald-500" />
+            ) : paymentFailed ? (
+              <AlertCircle size={40} className="text-red-500" />
+            ) : (
+              <Wallet size={40} className="text-amber-500" />
+            )}
           </div>
-          <h2 className="text-xl font-bold text-gray-900 text-center">Menunggu Pembayaran</h2>
-          <p className="text-gray-500 text-sm mt-1 text-center">Silakan lakukan pembayaran</p>
+          <h2 className="text-xl font-bold text-gray-900 text-center">
+            {paymentSuccess ? 'Pembayaran Berhasil' : paymentFailed ? 'Pembayaran Gagal' : 'Menunggu Pembayaran'}
+          </h2>
+          <p className="text-gray-500 text-sm mt-1 text-center">
+            {paymentSuccess ? 'Saldo sudah ditambahkan ke akun Anda' : paymentFailed ? 'Silakan buat invoice top up baru' : 'Silakan lakukan pembayaran'}
+          </p>
 
           <div className="mt-5 pt-5 border-t border-gray-50 space-y-3">
             <div className="flex justify-between text-sm">
@@ -159,7 +205,7 @@ export default function TopupPage() {
             </div>
           )}
 
-          {paymentData.qrCode && (
+          {!paymentSuccess && !paymentFailed && paymentData.qrCode && (
             <div className="mt-5 bg-gray-50 rounded-2xl p-4">
               <p className="text-xs font-bold text-gray-500 uppercase mb-2">Pembayaran QRIS</p>
               {qrImageUrl && (
@@ -188,7 +234,7 @@ export default function TopupPage() {
             </div>
           )}
 
-          {!paymentData.qrCode && paymentData.paymentUrl && (
+          {!paymentSuccess && !paymentFailed && !paymentData.qrCode && paymentData.paymentUrl && (
             <div className="mt-5 bg-gray-50 rounded-2xl p-4">
               <p className="text-xs font-bold text-gray-500 uppercase mb-2">Pembayaran QRIS</p>
               {paymentData.reference && (
@@ -208,8 +254,8 @@ export default function TopupPage() {
             </div>
           )}
 
-          <button onClick={() => router.push('/dashboard')} className="w-full mt-6 py-3.5 gradient-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 btn-press">
-            <Home size={17} /> Kembali ke Beranda
+          <button onClick={() => router.push(paymentSuccess ? '/dashboard' : '/topup')} className="w-full mt-6 py-3.5 gradient-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 btn-press">
+            <Home size={17} /> {paymentSuccess ? 'Kembali ke Beranda' : paymentFailed ? 'Buat Top Up Baru' : 'Kembali ke Beranda'}
           </button>
         </div>
       </div>
