@@ -1,0 +1,90 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Generate Prisma client
+      run: npx prisma generate
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Create deployment package
+      run: |
+        tar --exclude='node_modules' --exclude='.git' --exclude='.next' -czf deploy.tar.gz .
+        
+    - name: Transfer files to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: 72.62.121.108
+        username: root
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: 22
+        source: "deploy.tar.gz"
+        target: "/home/japriweb/"
+        
+    - name: Deploy on server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 72.62.121.108
+        username: root
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: 22
+        script: |
+          cd /home/japriweb
+          
+          # Stop the application if running
+          pm2 stop pulsa-app || true
+          
+          # Backup current version
+          if [ -d "pulsa-app-backup" ]; then
+            rm -rf pulsa-app-backup
+          fi
+          if [ -d "pulsa-app" ]; then
+            mv pulsa-app pulsa-app-backup
+          fi
+          
+          # Create new app directory
+          mkdir pulsa-app
+          cd pulsa-app
+          
+          # Extract new files
+          tar -xzf ../deploy.tar.gz
+          
+          # Create .env file from secrets
+          cat > .env << 'EOF'
+          ${{ secrets.ENV_FILE }}
+          EOF
+          
+          # Install production dependencies
+          npm install --production
+          
+          # Generate Prisma client
+          npx prisma generate
+          
+          # Start with PM2
+          pm2 start npm --name "pulsa-app" -- start
+          pm2 save
+          
+          # Cleanup
+          rm ../deploy.tar.gz
+          
+          echo "Deployment completed successfully"
