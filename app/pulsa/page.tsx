@@ -75,11 +75,6 @@ export default function PulsaPage() {
   }
 
   const visibleProduks = showAll ? produks : produks.slice(0, 6)
-  /*
-
-        <p className="text-sm text-gray-500">→ {noHp}</p>
-
-  */
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 safe-pb">
       {/* Header */}
