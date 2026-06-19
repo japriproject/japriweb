@@ -29,7 +29,7 @@ jobs:
       
     - name: Create deployment package
       run: |
-        tar --exclude='node_modules' --exclude='.git' --exclude='.next' -czf deploy.tar.gz .
+        tar --exclude='node_modules' --exclude='.git' --exclude='.next' --exclude='.github' --exclude='*.log' --exclude='logs' --exclude='.turbo' --exclude='debug-login.js' -czf deploy.tar.gz .
         
     - name: Transfer files to server
       uses: appleboy/scp-action@v0.1.7
