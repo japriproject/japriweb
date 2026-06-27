@@ -38,7 +38,7 @@ jobs:
       uses: appleboy/scp-action@v0.1.7
       with:
         host: 72.62.121.108
-        username: root
+        username: vps
         password: ${{ secrets.SERVER_PASSWORD }}
         port: 22
         timeout: 300s
