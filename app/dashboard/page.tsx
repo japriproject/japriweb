@@ -9,7 +9,7 @@ import {
   Smartphone, Wifi, Package, Gift, Globe, Send, PhoneCall,
   CreditCard, Gamepad2, Signal,
   Bolt, Shield, Droplets, Phone, Tv, Landmark,
-  MonitorSmartphone, Building2, Waves, Sparkles, Users, HeadsetIcon, UserPlus, QrCode
+  MonitorSmartphone, Building2, Waves, HeadsetIcon, UserPlus, QrCode, Hotel
 } from 'lucide-react'
 import DashboardMenus from '@/components/DashboardMenus'
 
@@ -128,32 +128,32 @@ export default async function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-2xl card-shadow border border-white/80 overflow-hidden">
-          <div className="grid grid-cols-5 gap-2 p-3">
-            <Link href="/topup" className="flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
+          <div className="flex gap-2 p-3 overflow-x-auto scrollbar-hide">
+            <Link href="/topup" className="min-w-[62px] flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
               <div className="w-10 h-10 bg-violet-50 rounded-lg flex items-center justify-center">
                 <Zap size={18} className="text-violet-500" />
               </div>
               <span className="text-[9px] font-semibold text-gray-700 text-center leading-tight">Top Up</span>
             </Link>
-            <Link href="/referral" className="flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Users size={18} className="text-blue-500" />
+            <Link href="/hotel" className="min-w-[62px] flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
+              <div className="w-10 h-10 bg-sky-50 rounded-lg flex items-center justify-center">
+                <Hotel size={18} className="text-sky-500" />
               </div>
-              <span className="text-[9px] font-semibold text-gray-700 text-center leading-tight">Referral</span>
+              <span className="text-[9px] font-semibold text-gray-700 text-center leading-tight">Hotel</span>
             </Link>
-            <Link href="/qris-kasir" className="flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
+            <Link href="/qris-kasir" className="min-w-[62px] flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
               <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
                 <QrCode size={18} className="text-emerald-500" />
               </div>
               <span className="text-[9px] font-semibold text-gray-700 text-center leading-tight">Qris Kasir</span>
             </Link>
-            <Link href="/register-mitra" className="flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
+            <Link href="/register-mitra" className="min-w-[62px] flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
               <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
                 <UserPlus size={18} className="text-emerald-500" />
               </div>
               <span className="text-[9px] font-semibold text-gray-700 text-center leading-tight">Register</span>
             </Link>
-            <Link href="/support" className="flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
+            <Link href="/support" className="min-w-[62px] flex flex-col items-center gap-2 py-2 rounded-xl hover:bg-gray-50 transition-colors active:scale-95">
               <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
                 <HeadsetIcon size={18} className="text-indigo-500" />
               </div>

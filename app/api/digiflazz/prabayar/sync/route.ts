@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { fetchDigiflazzPrepaidPriceList, type DigiflazzPrepaidProduct } from '@/lib/digiflazz'
 import { prisma } from '@/lib/prisma'
 
@@ -93,11 +93,14 @@ async function runSync() {
 
 export async function GET(req: NextRequest) {
   const syncKey = process.env.DIGIFLAZZ_SYNC_KEY
-  const requestKey = new URL(req.url).searchParams.get('key')
+  const url = new URL(req.url)
+  const requestKey = url.searchParams.get('key')
+  const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
 
-  if (syncKey && requestKey !== syncKey) {
+  if (syncKey && !isLocalhost && requestKey !== syncKey) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   return runSync()
 }
+
