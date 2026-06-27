@@ -50,7 +50,7 @@ jobs:
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: 72.62.121.108
-        username: root
+        username: vps
         password: ${{ secrets.SERVER_PASSWORD }}
         port: 22
         script: |
