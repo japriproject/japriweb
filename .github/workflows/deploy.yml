@@ -79,13 +79,20 @@ jobs:
           ${{ secrets.ENV_FILE }}
           EOF
           
-          # Install production dependencies
-          npm install --production
+          # Install all dependencies required for the production build
+          npm ci
           
           # Generate Prisma client
           npx prisma generate
+
+          # Build after .env is available on the server
+          npm run build
+
+          # Remove development-only packages after a successful build
+          npm prune --omit=dev
           
           # Start with PM2
+          pm2 delete pulsa-app || true
           pm2 start npm --name "pulsa-app" -- start
           pm2 save
           
