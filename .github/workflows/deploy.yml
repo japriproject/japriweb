@@ -85,6 +85,9 @@ jobs:
           # Generate Prisma client
           npx prisma generate
 
+          # Apply pending database migrations
+          npx prisma migrate deploy
+
           # Build after .env is available on the server
           npm run build
 

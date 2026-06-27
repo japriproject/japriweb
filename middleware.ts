@@ -4,8 +4,12 @@ import { verifyToken } from '@/lib/auth'
 const PUBLIC = [
   '/login',
   '/register',
+  '/forgot-password',
+  '/reset-password',
   '/api/auth/login',
   '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
   '/api/digiflazz/callback',
   '/api/digiflazz/prabayar/sync',
   '/api/digiflazz/pascabayar/sync',

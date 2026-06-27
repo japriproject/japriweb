@@ -2,11 +2,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Phone, Lock, Eye, EyeOff, Zap, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
+import { Phone, Mail, Lock, Eye, EyeOff, Zap, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ noHp: '', password: '' })
+  const [loginType, setLoginType] = useState<'phone' | 'email'>('phone')
+  const [form, setForm] = useState({ identifier: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -47,20 +48,32 @@ export default function LoginPage() {
       <div className="flex-1 px-5 -mt-5 relative z-10">
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-gray-100 p-1">
+              <button type="button" onClick={() => { setLoginType('phone'); setForm(f => ({ ...f, identifier: '' })) }} className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition ${loginType === 'phone' ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-500'}`}>
+                <Phone size={15} /> Nomor HP
+              </button>
+              <button type="button" onClick={() => { setLoginType('email'); setForm(f => ({ ...f, identifier: '' })) }} className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition ${loginType === 'email' ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-500'}`}>
+                <Mail size={15} /> Email
+              </button>
+            </div>
+
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Nomor HP</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{loginType === 'phone' ? 'Nomor HP' : 'Email'}</label>
               <div className="relative">
-                <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                {loginType === 'phone' ? <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /> : <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />}
                 <input
-                  type="tel" placeholder="08xxxxxxxxxx" required
-                  value={form.noHp} onChange={e => setForm(f => ({ ...f, noHp: e.target.value }))}
+                  type={loginType === 'phone' ? 'tel' : 'email'} placeholder={loginType === 'phone' ? '08xxxxxxxxxx atau 628xxxxxxxxxx' : 'email@contoh.com'} required
+                  value={form.identifier} onChange={e => setForm(f => ({ ...f, identifier: e.target.value }))}
                   className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 text-sm font-medium transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</label>
+                <Link href="/forgot-password" className="text-xs font-bold text-violet-600 hover:text-violet-700">Lupa password?</Link>
+              </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input

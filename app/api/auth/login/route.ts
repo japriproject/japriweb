@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { signToken, setTokenCookie } from '@/lib/auth'
 import { rateLimit } from '@/lib/rateLimit'
+import { normalizeIndonesianPhone } from '@/lib/phone'
 import { createHash } from 'crypto'
+import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
 const schema = z.object({
-  noHp: z.string().min(8).max(20),
+  identifier: z.string().min(3).max(100).optional(),
+  noHp: z.string().min(3).max(100).optional(),
   password: z.string().min(1),
-})
+}).refine((data) => data.identifier || data.noHp, { message: 'Email atau nomor HP wajib diisi' })
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
@@ -20,24 +24,35 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Data tidak valid' }, { status: 400 })
 
-  const { noHp, password } = parsed.data
+  const { password } = parsed.data
+  const rawIdentifier = (parsed.data.identifier || parsed.data.noHp || '').trim()
+  const isEmail = rawIdentifier.includes('@')
+  const identifier = isEmail ? rawIdentifier.toLowerCase() : normalizeIndonesianPhone(rawIdentifier)
 
   // Raw query untuk hindari kolom tanggal_daftar = 0000-00-00 yang invalid
   const rows = await prisma.$queryRaw<Array<{
     id: number; phone: string; password: string; status: number; type: number; name: string; login_status: number
-  }>>`SELECT id, phone, password, status, type, name, login_status FROM members WHERE phone = ${noHp} LIMIT 1`
+  }>>`SELECT id, phone, password, status, type, name, login_status FROM members WHERE ${isEmail ? Prisma.sql`LOWER(email) = ${identifier}` : Prisma.sql`phone = ${identifier}`} LIMIT 1`
 
   const member = rows[0] ?? null
   if (!member) {
-    return NextResponse.json({ error: 'No HP atau password salah' }, { status: 401 })
+    return NextResponse.json({ error: 'Email/nomor HP atau password salah' }, { status: 401 })
   }
 
   if (member.login_status === 1) {
     return NextResponse.json({ error: 'Akun sedang login di perangkat lain' }, { status: 403 })
   }
 
-  const md5 = createHash('md5').update(password).digest('hex')
-  if (md5 !== member.password) return NextResponse.json({ error: 'No HP atau password salah' }, { status: 401 })
+  const usesBcrypt = member.password.startsWith('$2')
+  const passwordMatches = usesBcrypt
+    ? await bcrypt.compare(password, member.password)
+    : createHash('md5').update(password).digest('hex') === member.password
+  if (!passwordMatches) return NextResponse.json({ error: 'Email/nomor HP atau password salah' }, { status: 401 })
+
+  if (!usesBcrypt) {
+    const upgradedHash = await bcrypt.hash(password, 12)
+    await prisma.$executeRaw`UPDATE members SET password = ${upgradedHash} WHERE id = ${member.id}`
+  }
 
   // type 1 = admin, 0 = member
   const role = member.type === 1 ? 'admin' : 'member'

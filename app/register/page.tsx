@@ -39,8 +39,8 @@ function RegisterForm() {
 
   const fields = [
     { key: 'nama', label: 'Nama Lengkap', type: 'text', placeholder: 'John Doe', icon: User },
-    { key: 'noHp', label: 'Nomor HP', type: 'tel', placeholder: '08xxxxxxxxxx', icon: Phone },
-    { key: 'email', label: 'Email (opsional)', type: 'email', placeholder: 'email@contoh.com', icon: Mail },
+    { key: 'noHp', label: 'Nomor HP', type: 'tel', placeholder: '08xxxxxxxxxx (disimpan sebagai 62)', icon: Phone },
+    { key: 'email', label: 'Email', type: 'email', placeholder: 'email@contoh.com', icon: Mail },
   ]
 
   return (
@@ -67,7 +67,7 @@ function RegisterForm() {
                   <Icon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type={type} placeholder={placeholder}
-                    required={key !== 'email'}
+                    required
                     value={form[key as keyof typeof form]}
                     onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
                     className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 text-sm font-medium transition-all"
