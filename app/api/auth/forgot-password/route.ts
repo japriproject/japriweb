@@ -37,7 +37,9 @@ export async function POST(req: NextRequest) {
     `
   })
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || new URL(req.url).origin).replace(/\/$/, '')
+  const baseUrl = process.env.NODE_ENV === 'production'
+    ? 'https://web.japrime.id'
+    : (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || new URL(req.url).origin).replace(/\/$/, '')
 
   try {
     await sendPasswordResetEmail({
