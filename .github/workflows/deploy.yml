@@ -54,22 +54,17 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         port: 22
         script: |
-          cd /home/japriweb
-          
-          # Stop the application if running
-          pm2 stop pulsa-app || true
-          
-          # Backup current version
-          if [ -d "pulsa-app-backup" ]; then
-            rm -rf pulsa-app-backup
-          fi
-          if [ -d "pulsa-app" ]; then
-            mv pulsa-app pulsa-app-backup
-          fi
-          
-          # Create new app directory
-          mkdir pulsa-app
-          cd pulsa-app
+          set -eu
+
+          BASE_DIR=/home/japriweb
+          CURRENT_DIR="$BASE_DIR/pulsa-app"
+          RELEASE_DIR="$BASE_DIR/pulsa-app-release"
+          BACKUP_DIR="$BASE_DIR/pulsa-app-backup"
+
+          # Prepare and build a separate release while the current app stays online.
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+          cd "$RELEASE_DIR"
           
           # Extract new files
           tar -xzf ../deploy.tar.gz
@@ -111,6 +106,16 @@ jobs:
                 RECOVERED=1
               fi
             elif echo "$MIGRATION_OUTPUT" | grep -Fq "20260628170000_add_email_verification"; then
+              EMAIL_COLUMN_EXISTS="$(node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?", "members", "email_verified_at").then((r) => console.log(Number(r[0].count))).finally(() => p.$disconnect());')"
+              EMAIL_TABLE_EXISTS="$(node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", "email_verification_tokens").then((r) => console.log(Number(r[0].count))).finally(() => p.$disconnect());')"
+
+              if [ "$EMAIL_COLUMN_EXISTS" = "0" ]; then
+                node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); p.$executeRawUnsafe("ALTER TABLE members ADD COLUMN email_verified_at DATETIME(0) NULL AFTER email").finally(() => p.$disconnect());'
+              fi
+              if [ "$EMAIL_TABLE_EXISTS" = "0" ]; then
+                node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); p.$executeRawUnsafe("CREATE TABLE email_verification_tokens (id INTEGER NOT NULL AUTO_INCREMENT, member_id INTEGER NOT NULL, pending_email VARCHAR(100) NOT NULL, token_hash VARCHAR(64) NOT NULL, expires_at DATETIME(0) NOT NULL, used_at DATETIME(0) NULL, created_at TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0), UNIQUE INDEX unique_email_verification_token(token_hash), INDEX idx_email_verification_member(member_id, expires_at), INDEX idx_email_verification_pending(pending_email), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci").finally(() => p.$disconnect());'
+              fi
+
               OBJECTS_EXIST="$(node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); Promise.all([p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", "email_verification_tokens"), p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?", "members", "email_verified_at")]).then(([t,c]) => console.log(Number(t[0].count) === 1 && Number(c[0].count) === 1 ? 1 : 0)).finally(() => p.$disconnect());')"
               if [ "$OBJECTS_EXIST" = "1" ]; then
                 npx prisma migrate resolve --applied 20260628170000_add_email_verification
@@ -137,13 +142,41 @@ jobs:
 
           # Remove development-only packages after a successful build
           npm prune --omit=dev
-          
-          # Start with PM2
+
+          # Switch releases only after migrations and build have succeeded.
+          pm2 stop pulsa-app || true
+
+          if [ -f "$CURRENT_DIR/.next/BUILD_ID" ]; then
+            rm -rf "$BACKUP_DIR"
+            mv "$CURRENT_DIR" "$BACKUP_DIR"
+          elif [ -d "$CURRENT_DIR" ]; then
+            rm -rf "$CURRENT_DIR"
+          fi
+
+          mv "$RELEASE_DIR" "$CURRENT_DIR"
+          cd "$CURRENT_DIR"
+
           pm2 delete pulsa-app || true
           pm2 start npm --name "pulsa-app" -- start
+          sleep 5
+
+          APP_PID="$(pm2 pid pulsa-app)"
+          if [ -z "$APP_PID" ] || [ "$APP_PID" = "0" ] || ! curl -fsS --max-time 10 http://127.0.0.1:3000/forgot-password > /dev/null; then
+            echo "New release failed to start; restoring the previous release."
+            pm2 delete pulsa-app || true
+            rm -rf "$CURRENT_DIR"
+            if [ -d "$BACKUP_DIR" ]; then
+              mv "$BACKUP_DIR" "$CURRENT_DIR"
+              cd "$CURRENT_DIR"
+              pm2 start npm --name "pulsa-app" -- start
+              pm2 save
+            fi
+            exit 1
+          fi
+
           pm2 save
           
           # Cleanup
-          rm ../deploy.tar.gz
+          rm -f "$BASE_DIR/deploy.tar.gz"
           
           echo "Deployment completed successfully"
