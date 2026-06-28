@@ -8,7 +8,7 @@ export async function PUT(req: NextRequest) {
     const session = await getSession()
     if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { nama, email, oldPassword, newPassword } = await req.json()
+    const { nama, oldPassword, newPassword } = await req.json()
 
     if (!nama?.trim()) {
       return NextResponse.json({ error: 'Nama tidak boleh kosong' }, { status: 400 })
@@ -36,14 +36,14 @@ export async function PUT(req: NextRequest) {
       
       await prisma.$executeRaw`
         UPDATE members 
-        SET name = ${nama.trim()}, email = ${email?.trim() || ''}, password = ${hashedPassword}
+        SET name = ${nama.trim()}, password = ${hashedPassword}
         WHERE id = ${Number(session.userId)}
         LIMIT 1
       `
     } else {
       await prisma.$executeRaw`
         UPDATE members 
-        SET name = ${nama.trim()}, email = ${email?.trim() || ''}
+        SET name = ${nama.trim()}
         WHERE id = ${Number(session.userId)}
         LIMIT 1
       `

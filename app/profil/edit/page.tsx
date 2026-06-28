@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 import { ArrowLeft, Loader2, Save, User, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
-type UserData = { id: string; nama: string; noHp: string; email: string | null; createdAt: string }
+type UserData = { id: string; nama: string; noHp: string; email: string | null; emailVerified: boolean; createdAt: string }
 
 export default function UpdateProfilePage() {
   const router = useRouter()
@@ -132,10 +132,14 @@ export default function UpdateProfilePage() {
                 <input
                   type="email"
                   value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  disabled
                   placeholder="email@example.com"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/25 focus:border-violet-500 text-sm font-medium"
+                  className="w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm font-medium text-gray-500"
                 />
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className={`text-xs font-medium ${user?.emailVerified ? 'text-emerald-600' : 'text-amber-600'}`}>{user?.emailVerified ? 'Email sudah terverifikasi' : 'Email belum terverifikasi'}</p>
+                <button type="button" onClick={() => router.push('/profil/email')} className="text-xs font-bold text-violet-600">Ubah & Verifikasi</button>
               </div>
             </div>
           </div>

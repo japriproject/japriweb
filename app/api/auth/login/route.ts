@@ -31,12 +31,16 @@ export async function POST(req: NextRequest) {
 
   // Raw query untuk hindari kolom tanggal_daftar = 0000-00-00 yang invalid
   const rows = await prisma.$queryRaw<Array<{
-    id: number; phone: string; password: string; status: number; type: number; name: string; login_status: number
-  }>>`SELECT id, phone, password, status, type, name, login_status FROM members WHERE ${isEmail ? Prisma.sql`LOWER(email) = ${identifier}` : Prisma.sql`phone = ${identifier}`} LIMIT 1`
+    id: number; phone: string; password: string; status: number; type: number; name: string; login_status: number; email_verified_at: Date | null
+  }>>`SELECT id, phone, password, status, type, name, login_status, email_verified_at FROM members WHERE ${isEmail ? Prisma.sql`LOWER(email) = ${identifier}` : Prisma.sql`phone = ${identifier}`} LIMIT 1`
 
   const member = rows[0] ?? null
   if (!member) {
     return NextResponse.json({ error: 'Email/nomor HP atau password salah' }, { status: 401 })
+  }
+
+  if (isEmail && !member.email_verified_at) {
+    return NextResponse.json({ error: 'Email belum diverifikasi. Masuk dengan nomor HP lalu verifikasi email di halaman profil.' }, { status: 403 })
   }
 
   if (member.login_status === 1) {

@@ -5,10 +5,10 @@ import BottomNav from '@/components/BottomNav'
 import { formatRupiah, formatDate } from '@/lib/utils'
 import {
   Smartphone, PlusCircle, Loader2, Receipt, Star, Shield,
-  HelpCircle, FileText, LogOut, ChevronRight, Wallet
+  HelpCircle, FileText, LogOut, ChevronRight, Wallet, Mail
 } from 'lucide-react'
 
-type User = { id: string; nama: string; noHp: string; email: string | null; saldo: number; role: string; createdAt: string }
+type User = { id: string; nama: string; noHp: string; email: string | null; emailVerified: boolean; saldo: number; role: string; createdAt: string }
 
 export default function ProfilPage() {
   const router = useRouter()
@@ -32,6 +32,7 @@ export default function ProfilPage() {
 
   const menuItems = [
     { label: 'Update Profile', href: '/profil/edit', icon: Smartphone, color: 'text-violet-500 bg-violet-50' },
+    { label: user?.emailVerified ? 'Email Terverifikasi' : 'Verifikasi Email', href: '/profil/email', icon: Mail, color: user?.emailVerified ? 'text-emerald-500 bg-emerald-50' : 'text-amber-500 bg-amber-50' },
     { label: 'Riwayat Bonus', href: '/riwayat-bonus', icon: Star, color: 'text-amber-500 bg-amber-50' },
   ]
 

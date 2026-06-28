@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const email = parsed.data.email.trim().toLowerCase()
   const member = await prisma.members.findFirst({
-    where: { email },
+    where: { email, email_verified_at: { not: null } },
     select: { id: true, name: true, email: true },
   })
 

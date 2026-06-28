@@ -94,3 +94,25 @@ export async function sendPasswordChangedEmail(input: {
     `,
   })
 }
+
+export async function sendEmailVerificationEmail(input: {
+  email: string
+  name: string
+  verificationUrl: string
+  tokenId: number
+}) {
+  return sendEmail({
+    email: input.email,
+    subject: 'Verifikasi email Japri Pay',
+    idempotencyKey: `email-verification-${input.tokenId}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#172033">
+        <h2>Verifikasi email Anda</h2>
+        <p>Halo ${escapeHtml(input.name || 'Pengguna')},</p>
+        <p>Klik tombol berikut untuk mengaktifkan <strong>${escapeHtml(input.email)}</strong> sebagai email akun Japri Pay Anda.</p>
+        <p><a href="${escapeHtml(input.verificationUrl)}" style="display:inline-block;padding:12px 20px;background:#6d28d9;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">Verifikasi Email</a></p>
+        <p style="font-size:13px;color:#667085">Tautan berlaku selama 30 menit dan hanya dapat digunakan satu kali. Abaikan email ini jika Anda tidak melakukan perubahan.</p>
+      </div>
+    `,
+  })
+}
