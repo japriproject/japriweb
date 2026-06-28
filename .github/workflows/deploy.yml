@@ -85,8 +85,27 @@ jobs:
           # Generate Prisma client
           npx prisma generate
 
-          # Apply pending database migrations
-          npx prisma migrate deploy
+          # Apply pending database migrations. Recover the legacy hotel migration
+          # only when its table is already present in the target database.
+          if ! MIGRATION_OUTPUT="$(npx prisma migrate deploy 2>&1)"; then
+            echo "$MIGRATION_OUTPUT"
+
+            HOTEL_TABLE_EXISTS="$(node -e 'const { PrismaClient } = require("@prisma/client"); const prisma = new PrismaClient(); prisma.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", "hotel_booking").then((rows) => { console.log(Number(rows[0].count)); }).finally(() => prisma.$disconnect());')"
+
+            if echo "$MIGRATION_OUTPUT" | grep -Fq "20260626161000_add_hotel_booking" && [ "$HOTEL_TABLE_EXISTS" = "1" ]; then
+              echo "hotel_booking already exists; recording its legacy migration as applied."
+              npx prisma migrate resolve --applied 20260626161000_add_hotel_booking
+              npx prisma migrate deploy
+            else
+              echo "Migration failed and cannot be recovered automatically."
+              exit 1
+            fi
+          else
+            echo "$MIGRATION_OUTPUT"
+          fi
+
+          # Fail the deployment if any migration remains pending or failed.
+          npx prisma migrate status
 
           # Build after .env is available on the server
           npm run build
