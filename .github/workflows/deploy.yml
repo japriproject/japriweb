@@ -85,23 +85,48 @@ jobs:
           # Generate Prisma client
           npx prisma generate
 
-          # Apply pending database migrations. Recover the legacy hotel migration
-          # only when its table is already present in the target database.
-          if ! MIGRATION_OUTPUT="$(npx prisma migrate deploy 2>&1)"; then
+          # Apply migrations and reconcile known legacy objects that were created
+          # before Prisma migration history was introduced.
+          MIGRATIONS_APPLIED=0
+          for ATTEMPT in 1 2 3 4; do
+            if MIGRATION_OUTPUT="$(npx prisma migrate deploy 2>&1)"; then
+              echo "$MIGRATION_OUTPUT"
+              MIGRATIONS_APPLIED=1
+              break
+            fi
+
             echo "$MIGRATION_OUTPUT"
+            RECOVERED=0
 
-            HOTEL_TABLE_EXISTS="$(node -e 'const { PrismaClient } = require("@prisma/client"); const prisma = new PrismaClient(); prisma.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", "hotel_booking").then((rows) => { console.log(Number(rows[0].count)); }).finally(() => prisma.$disconnect());')"
+            if echo "$MIGRATION_OUTPUT" | grep -Fq "20260626161000_add_hotel_booking"; then
+              OBJECTS_EXIST="$(node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", "hotel_booking").then((r) => console.log(Number(r[0].count))).finally(() => p.$disconnect());')"
+              if [ "$OBJECTS_EXIST" = "1" ]; then
+                npx prisma migrate resolve --applied 20260626161000_add_hotel_booking
+                RECOVERED=1
+              fi
+            elif echo "$MIGRATION_OUTPUT" | grep -Fq "20260628090000_add_password_reset_tokens"; then
+              OBJECTS_EXIST="$(node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", "password_reset_tokens").then((r) => console.log(Number(r[0].count))).finally(() => p.$disconnect());')"
+              if [ "$OBJECTS_EXIST" = "1" ]; then
+                npx prisma migrate resolve --applied 20260628090000_add_password_reset_tokens
+                RECOVERED=1
+              fi
+            elif echo "$MIGRATION_OUTPUT" | grep -Fq "20260628170000_add_email_verification"; then
+              OBJECTS_EXIST="$(node -e 'const { PrismaClient } = require("@prisma/client"); const p = new PrismaClient(); Promise.all([p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", "email_verification_tokens"), p.$queryRawUnsafe("SELECT COUNT(*) AS count FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?", "members", "email_verified_at")]).then(([t,c]) => console.log(Number(t[0].count) === 1 && Number(c[0].count) === 1 ? 1 : 0)).finally(() => p.$disconnect());')"
+              if [ "$OBJECTS_EXIST" = "1" ]; then
+                npx prisma migrate resolve --applied 20260628170000_add_email_verification
+                RECOVERED=1
+              fi
+            fi
 
-            if echo "$MIGRATION_OUTPUT" | grep -Fq "20260626161000_add_hotel_booking" && [ "$HOTEL_TABLE_EXISTS" = "1" ]; then
-              echo "hotel_booking already exists; recording its legacy migration as applied."
-              npx prisma migrate resolve --applied 20260626161000_add_hotel_booking
-              npx prisma migrate deploy
-            else
-              echo "Migration failed and cannot be recovered automatically."
+            if [ "$RECOVERED" != "1" ]; then
+              echo "Migration failed and its required database objects are incomplete."
               exit 1
             fi
-          else
-            echo "$MIGRATION_OUTPUT"
+          done
+
+          if [ "$MIGRATIONS_APPLIED" != "1" ]; then
+            echo "Migrations did not complete after recovery attempts."
+            exit 1
           fi
 
           # Fail the deployment if any migration remains pending or failed.
