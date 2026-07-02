@@ -254,7 +254,7 @@ export default function TopupPage() {
             </div>
           )}
 
-          <button onClick={() => router.push(paymentSuccess ? '/dashboard' : '/topup')} className="w-full mt-6 py-3.5 gradient-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 btn-press">
+          <button onClick={() => router.push(paymentFailed ? '/topup' : '/dashboard')} className="w-full mt-6 py-3.5 gradient-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 btn-press">
             <Home size={17} /> {paymentSuccess ? 'Kembali ke Beranda' : paymentFailed ? 'Buat Top Up Baru' : 'Kembali ke Beranda'}
           </button>
         </div>
