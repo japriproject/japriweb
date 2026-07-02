@@ -116,3 +116,19 @@ export async function sendEmailVerificationEmail(input: {
     `,
   })
 }
+
+export async function sendMitraRegistrationOtpEmail(input: { email: string; name: string; otp: string }) {
+  return sendEmail({
+    email: input.email,
+    subject: 'Kode OTP pendaftaran Mitra Japri Pay',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#172033">
+        <h2>Kode OTP pendaftaran Mitra</h2>
+        <p>Halo ${escapeHtml(input.name || 'Mitra')},</p>
+        <p>Masukkan kode berikut untuk menyelesaikan pendaftaran Mitra Japri Pay:</p>
+        <div style="margin:20px 0;padding:18px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;text-align:center;font-size:30px;font-weight:700;letter-spacing:8px;color:#047857">${escapeHtml(input.otp)}</div>
+        <p style="font-size:13px;color:#667085">Kode berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun.</p>
+      </div>
+    `,
+  })
+}

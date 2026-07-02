@@ -3,7 +3,11 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rateLimit'
-import { createOtp, normalizePhone, sendOtp } from '@/lib/otp'
+import { createOtp, normalizePhone } from '@/lib/otp'
+import { sendMitraRegistrationOtpEmail } from '@/lib/email'
+import { z } from 'zod'
+
+const emailSchema = z.string().trim().toLowerCase().email().max(100)
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +20,7 @@ export async function POST(req: Request) {
 
     const { name, phone, email, password } = await req.json()
     const normalizedPhone = normalizePhone(String(phone || ''))
+    const parsedEmail = emailSchema.safeParse(email)
 
     if (!name || !normalizedPhone || !email || !password) {
       return NextResponse.json({ error: 'Isi data mitra dulu sebelum meminta OTP' }, { status: 400 })
@@ -25,11 +30,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Format nomor HP tidak valid' }, { status: 400 })
     }
 
+    if (!parsedEmail.success) return NextResponse.json({ error: 'Format email tidak valid' }, { status: 400 })
+    const normalizedEmail = parsedEmail.data
+
     if (String(password).length < 6) {
       return NextResponse.json({ error: 'Password minimal 6 karakter' }, { status: 400 })
     }
 
-    if (!rateLimit(`mitra-otp:${decoded.userId}:${normalizedPhone}`, 3, 10 * 60_000)) {
+    if (!rateLimit(`mitra-otp:${decoded.userId}:${normalizedPhone}:${normalizedEmail}`, 3, 10 * 60_000)) {
       return NextResponse.json({ error: 'Terlalu banyak permintaan OTP. Coba lagi nanti.' }, { status: 429 })
     }
 
@@ -41,17 +49,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Nomor HP sudah terdaftar' }, { status: 400 })
     }
 
-    const { otp, expiresInSeconds } = createOtp(normalizedPhone)
-    const sendResult = await sendOtp(normalizedPhone, otp)
+
+    const existingEmail = await prisma.members.findFirst({ where: { email: normalizedEmail }, select: { id: true } })
+    if (existingEmail) return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 409 })
+
+    const { otp, expiresInSeconds } = createOtp(normalizedPhone, normalizedEmail)
+    await sendMitraRegistrationOtpEmail({ email: normalizedEmail, name: String(name), otp })
 
     return NextResponse.json({
       success: true,
-      message: 'OTP telah dikirim ke nomor mitra',
+      message: `OTP telah dikirim ke ${normalizedEmail}`,
       expiresInSeconds,
-      ...(process.env.NODE_ENV !== 'production' && !sendResult.sent ? { devOtp: otp } : {}),
     })
   } catch (error) {
     console.error('Register mitra OTP error:', error)
-    return NextResponse.json({ error: 'Gagal mengirim OTP' }, { status: 500 })
+    return NextResponse.json({ error: 'Gagal mengirim OTP ke email' }, { status: 502 })
   }
 }

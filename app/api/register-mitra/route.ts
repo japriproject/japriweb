@@ -26,12 +26,13 @@ export async function POST(req: Request) {
 
     const { name, phone, email, password, otp } = await req.json()
     const normalizedPhone = normalizePhone(String(phone || ''))
+    const normalizedEmail = String(email || '').trim().toLowerCase()
 
     if (!name || !normalizedPhone || !email || !password || !otp) {
       return NextResponse.json({ error: 'Semua field harus diisi' }, { status: 400 })
     }
 
-    if (!verifyOtp(normalizedPhone, String(otp))) {
+    if (!verifyOtp(normalizedPhone, String(otp), normalizedEmail)) {
       return NextResponse.json({ error: 'OTP tidak valid atau sudah kadaluarsa' }, { status: 400 })
     }
 
@@ -43,6 +44,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Nomor HP sudah terdaftar' }, { status: 400 })
     }
 
+
+    const existingEmail = await prisma.members.findFirst({ where: { email: normalizedEmail }, select: { id: true } })
+    if (existingEmail) return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 409 })
+
     const maxReffData = await prisma.$queryRaw<Array<{ maxReff: number }>>`
       SELECT COALESCE(MAX(reff), 1000) as maxReff FROM members
     `
@@ -52,7 +57,7 @@ export async function POST(req: Request) {
 
     await prisma.$executeRaw`
       INSERT INTO members (name, phone, email, password, upline, reff, sender, status, created_at, tanggal_daftar)
-      VALUES (${name}, ${normalizedPhone}, ${email}, ${hashedPassword}, ${uplineReff}, ${newReff}, '', 1, NOW(), CURDATE())
+      VALUES (${name}, ${normalizedPhone}, ${normalizedEmail}, ${hashedPassword}, ${uplineReff}, ${newReff}, '', 1, NOW(), CURDATE())
     `
 
     return NextResponse.json({ success: true, message: 'Mitra berhasil didaftarkan' })

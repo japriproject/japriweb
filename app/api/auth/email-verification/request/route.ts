@@ -36,6 +36,10 @@ export async function POST(req: NextRequest) {
   await prisma.$transaction(async (tx) => {
     await tx.email_verification_tokens.deleteMany({ where: { member_id: memberId, used_at: null } })
     await tx.email_verification_tokens.create({ data: { member_id: memberId, pending_email: email, token_hash: tokenHash, expires_at: expiresAt } })
+    await tx.members.update({
+      where: { id: memberId },
+      data: { email, email_verified_at: null },
+    })
   })
 
   const created = await prisma.email_verification_tokens.findUnique({ where: { token_hash: tokenHash }, select: { id: true } })
@@ -52,7 +56,13 @@ export async function POST(req: NextRequest) {
       tokenId: created.id,
     })
   } catch (error) {
-    await prisma.email_verification_tokens.deleteMany({ where: { id: created.id, used_at: null } })
+    await prisma.$transaction(async (tx) => {
+      await tx.email_verification_tokens.deleteMany({ where: { id: created.id, used_at: null } })
+      await tx.members.update({
+        where: { id: memberId },
+        data: { email: member.email, email_verified_at: member.email_verified_at },
+      })
+    })
     console.error('Failed to send email verification', error)
     return NextResponse.json({ error: 'Email verifikasi gagal dikirim. Silakan coba kembali.' }, { status: 502 })
   }

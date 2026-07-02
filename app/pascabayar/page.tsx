@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
+import CustomerInput from '@/components/CustomerInput'
 import { formatRupiah } from '@/lib/utils'
 import {
   ArrowLeft, Zap, CreditCard, Droplets, Phone, Tv, Receipt,
@@ -232,26 +233,13 @@ function PascabayarContent() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl p-4 card-shadow border border-gray-100/80">
-          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2.5">
-            {activeTipe.inputLabel}
-          </label>
-          <div className="relative">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder={activeTipe.placeholder}
-              value={idPelanggan}
-              onChange={e => {
-                setIdPelanggan(e.target.value)
-                setStep('form')
-                setError('')
-              }}
-              className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/25 focus:border-violet-500 text-sm font-medium transition-all"
-            />
-          </div>
-          <p className="text-xs text-gray-400 mt-2">Masukkan {activeTipe.inputLabel.toLowerCase()} dengan benar</p>
-        </div>
+        <CustomerInput
+          value={idPelanggan}
+          onChange={value => { setIdPelanggan(value); setStep('form'); setError('') }}
+          label={activeTipe.inputLabel}
+          placeholder={activeTipe.placeholder}
+          inputMode="numeric"
+        />
 
         <div className="bg-white rounded-2xl card-shadow border border-gray-100/80 overflow-hidden">
           <div className="px-4 pt-4 pb-2 flex items-center justify-between">

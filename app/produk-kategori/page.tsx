@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { detectBrand, formatRupiah } from '@/lib/utils'
+import CustomerInput from '@/components/CustomerInput'
 import { ArrowLeft, CheckCircle2, Loader2, AlertCircle, Wallet, Phone, ShieldCheck, X, Search, ChevronDown } from 'lucide-react'
 
 type Brand = string
@@ -212,25 +213,14 @@ function ProdukKategoriContent() {
       </div>
 
       <div className="flex-1 px-4 py-4 space-y-3.5 pb-6">
-        <div className="bg-white rounded-2xl p-4 card-shadow border border-gray-100/80">
-          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2.5">
-            {isPulsaOrData ? 'Nomor HP Tujuan' : 'Nomor Pelanggan'}
-          </label>
-          <div className="relative">
-            <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="tel"
-              placeholder={isPascabayar ? 'Masukkan nomor pelanggan' : '08xxxxxxxxxx'}
-              value={noHp}
-              onChange={e => {
-                setNoHp(e.target.value)
-                setSelected(null)
-                setInquiry(null)
-                setError('')
-              }}
-              className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/25 focus:border-violet-500 text-sm font-medium transition-all"
-            />
-          </div>
+        <CustomerInput
+          value={noHp}
+          onChange={value => { setNoHp(value); setSelected(null); setInquiry(null); setError('') }}
+          label={isPulsaOrData ? 'Data Pelanggan' : 'Nomor Pelanggan'}
+          placeholder={isPascabayar ? 'Masukkan nomor pelanggan' : '08xxxxxxxxxx'}
+          inputMode={isPascabayar ? 'numeric' : 'tel'}
+        />
+        <div className="-mt-3.5 px-4">
           {detectedBrand && (
             <div className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-full bg-violet-50 text-violet-600">
               <ShieldCheck size={12} /> {detectedBrand} terdeteksi

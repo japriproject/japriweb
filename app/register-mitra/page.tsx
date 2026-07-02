@@ -42,7 +42,7 @@ export default function RegisterMitraPage() {
     e.preventDefault()
     setError('')
     if (!otpSent) return requestOtp()
-    if (!formData.otp.trim()) return setError('Masukkan kode OTP yang dikirim ke nomor mitra')
+    if (!formData.otp.trim()) return setError('Masukkan kode OTP yang dikirim ke email mitra')
 
     setLoading(true)
 
@@ -191,7 +191,7 @@ export default function RegisterMitraPage() {
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <p className="text-xs text-emerald-600 font-medium">
-                  OTP sudah dikirim ke nomor mitra.
+                  OTP sudah dikirim ke email mitra.
                   {devOtp ? ` Kode dev: ${devOtp}` : ''}
                 </p>
                 <button

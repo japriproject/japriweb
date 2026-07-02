@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
+import CustomerInput from '@/components/CustomerInput'
 import { detectBrand, formatRupiah } from '@/lib/utils'
 import { ArrowLeft, Wifi, CheckCircle2, Loader2, AlertCircle, Wallet, ShieldCheck, ChevronDown, Phone } from 'lucide-react'
 
@@ -100,18 +101,8 @@ export default function PaketDataPage() {
 
       <div className="flex-1 px-4 py-4 space-y-3.5">
         {/* Input Nomor */}
-        <div className="bg-white rounded-2xl p-4 card-shadow border border-gray-100/80">
-          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2.5">Nomor Tujuan</label>
-          <div className="relative">
-            <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="tel"
-              placeholder="08xxxxxxxxxx"
-              value={noHp}
-              onChange={e => { setNoHp(e.target.value); setSelected(null) }}
-              className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 text-sm font-medium transition-all"
-            />
-          </div>
+        <CustomerInput value={noHp} onChange={value => { setNoHp(value); setSelected(null) }} label="Data Pelanggan" accent="blue" />
+        <div className="-mt-3.5 px-4">
           {brand && (
             <div className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-full bg-blue-50 text-blue-600">
               <ShieldCheck size={12} /> {brand} terdeteksi

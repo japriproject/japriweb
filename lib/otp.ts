@@ -11,9 +11,13 @@ type OtpEntry = {
 
 const store = new Map<string, OtpEntry>()
 
-function hashOtp(phone: string, otp: string) {
+function hashOtp(identity: string, otp: string) {
   const secret = process.env.JWT_SECRET || 'dev-otp-secret'
-  return createHash('sha256').update(`${phone}:${otp}:${secret}`).digest('hex')
+  return createHash('sha256').update(`${identity}:${otp}:${secret}`).digest('hex')
+}
+
+function otpIdentity(phone: string, email?: string) {
+  return email ? `${normalizePhone(phone)}:${email.trim().toLowerCase()}` : normalizePhone(phone)
 }
 
 export function normalizePhone(phone: string) {
@@ -22,12 +26,12 @@ export function normalizePhone(phone: string) {
   return digits
 }
 
-export function createOtp(phone: string) {
-  const normalizedPhone = normalizePhone(phone)
+export function createOtp(phone: string, email?: string) {
+  const identity = otpIdentity(phone, email)
   const otp = randomInt(0, 10 ** OTP_LENGTH).toString().padStart(OTP_LENGTH, '0')
 
-  store.set(normalizedPhone, {
-    hash: hashOtp(normalizedPhone, otp),
+  store.set(identity, {
+    hash: hashOtp(identity, otp),
     expiresAt: Date.now() + OTP_TTL_MS,
     attempts: 0,
   })
@@ -35,24 +39,24 @@ export function createOtp(phone: string) {
   return { otp, expiresInSeconds: OTP_TTL_MS / 1000 }
 }
 
-export function verifyOtp(phone: string, otp: string) {
-  const normalizedPhone = normalizePhone(phone)
-  const entry = store.get(normalizedPhone)
+export function verifyOtp(phone: string, otp: string, email?: string) {
+  const identity = otpIdentity(phone, email)
+  const entry = store.get(identity)
   if (!entry) return false
 
   if (Date.now() > entry.expiresAt) {
-    store.delete(normalizedPhone)
+    store.delete(identity)
     return false
   }
 
   if (entry.attempts >= 5) {
-    store.delete(normalizedPhone)
+    store.delete(identity)
     return false
   }
 
   entry.attempts += 1
-  const valid = entry.hash === hashOtp(normalizedPhone, otp)
-  if (valid) store.delete(normalizedPhone)
+  const valid = entry.hash === hashOtp(identity, otp)
+  if (valid) store.delete(identity)
   return valid
 }
 

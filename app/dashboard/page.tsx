@@ -61,8 +61,8 @@ export default async function DashboardPage() {
   if (!session) redirect('/login')
 
   const [memberRows, prabayarRows, pascabayarRows] = await Promise.all([
-    prisma.$queryRaw<Array<{ name: string; phone: string; sososo: number; bobobo: number }>>`
-      SELECT name, phone, sososo, bobobo FROM members WHERE id = ${Number(session.userId)} LIMIT 1
+    prisma.$queryRaw<Array<{ name: string; phone: string; sososo: number; bobobo: number; email_verified_at: Date | null }>>`
+      SELECT name, phone, sososo, bobobo, email_verified_at FROM members WHERE id = ${Number(session.userId)} LIMIT 1
     `,
     prisma.$queryRaw<Array<{ kategori: string }>>`
       SELECT DISTINCT kategori FROM pulsa ORDER BY kategori ASC
@@ -74,6 +74,7 @@ export default async function DashboardPage() {
 
   const member = memberRows[0]
   if (!member) redirect('/login')
+  if (!member.email_verified_at) redirect('/profil/email?required=1')
 
   const saldo = member.sososo || 0
   const bonus = member.bobobo || 0

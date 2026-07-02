@@ -1,13 +1,15 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { FormEvent, Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, Loader2, Mail, ShieldCheck } from 'lucide-react'
 
 type Account = { email: string | null; emailVerified: boolean }
 
-export default function UpdateEmailPage() {
+function UpdateEmailContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const verificationRequired = searchParams.get('required') === '1'
   const [account, setAccount] = useState<Account | null>(null)
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(true)
@@ -50,12 +52,17 @@ export default function UpdateEmailPage() {
   return (
     <main className="min-h-screen bg-slate-50">
       <header className="gradient-primary px-5 pb-7 pt-12 text-white">
-        <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 text-sm text-white/70"><ArrowLeft size={16} /> Kembali</button>
+        {!verificationRequired && <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 text-sm text-white/70"><ArrowLeft size={16} /> Kembali</button>}
         <h1 className="text-xl font-bold">Verifikasi Email</h1>
         <p className="mt-1 text-sm text-white/70">Aktifkan email yang benar untuk login dan pemulihan akun.</p>
       </header>
 
       <section className="mx-auto max-w-lg space-y-4 px-4 py-6">
+        {verificationRequired && (
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-relaxed text-violet-800">
+            Verifikasi email diperlukan sebelum membuka dashboard. Isi email aktif di bawah ini; tautan verifikasi akan dikirim dan email akun diperbarui setelah tautan dibuka.
+          </div>
+        )}
         <div className={`flex gap-3 rounded-2xl border p-4 ${account?.emailVerified ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
           {account?.emailVerified ? <ShieldCheck className="shrink-0 text-emerald-600" /> : <Mail className="shrink-0 text-amber-600" />}
           <div>
@@ -83,5 +90,13 @@ export default function UpdateEmailPage() {
         </form>
       </section>
     </main>
+  )
+}
+
+export default function UpdateEmailPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen grid place-items-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" /></main>}>
+      <UpdateEmailContent />
+    </Suspense>
   )
 }
