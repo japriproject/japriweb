@@ -20,23 +20,27 @@ export async function GET(req: NextRequest) {
           SELECT * FROM pasca
           WHERE LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
           AND LOWER(brand) = LOWER(${brand})
+          AND CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
         `
       } else if (kategori) {
         rows = await prisma.$queryRaw<any[]>`
           SELECT * FROM pasca
           WHERE LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
+          AND CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
         `
       } else if (brand) {
         rows = await prisma.$queryRaw<any[]>`
           SELECT * FROM pasca
           WHERE LOWER(brand) = LOWER(${brand})
+          AND CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
         `
       } else {
         rows = await prisma.$queryRaw<any[]>`
           SELECT * FROM pasca
+          WHERE CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
           LIMIT 50
         `
@@ -48,6 +52,7 @@ export async function GET(req: NextRequest) {
         nama: row.name,
         hargaJual: row.sale,
         operator: row.brand,
+        status: String(row.status),
       })))
     }
 

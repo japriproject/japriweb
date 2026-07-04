@@ -132,9 +132,18 @@ function ProdukKategoriContent() {
       ? `/api/produk?brand=${encodeURIComponent(selectedBrand)}&type=pasca`
       : `/api/produk?brand=${encodeURIComponent(selectedBrand)}&kategori=${encodeURIComponent(kategori)}`
 
+    setError('')
     fetch(produkUrl)
-      .then(r => r.ok ? r.json() : [])
+      .then(async r => {
+        const data = await r.json().catch(() => null)
+        if (!r.ok) throw new Error(data?.error || 'Gagal memuat pilihan produk')
+        return data
+      })
       .then(d => setProduks(Array.isArray(d) ? d : []))
+      .catch(error => {
+        setProduks([])
+        setError(error instanceof Error ? error.message : 'Gagal memuat pilihan produk')
+      })
       .finally(() => setLoadProduk(false))
   }, [selectedBrand, kategori, noHp, isPascabayar])
 
@@ -328,7 +337,6 @@ function ProdukKategoriContent() {
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {produks
-                        .filter(p => p.status === '1')
                         .filter(p => p.name.toLowerCase().includes(produkSearch.toLowerCase()))
                         .map(p => (
                           <button
