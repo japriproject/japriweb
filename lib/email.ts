@@ -1,3 +1,25 @@
+import 'server-only'
+import nodemailer from 'nodemailer'
+
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null
+
+function getTransporter() {
+  if (transporter) return transporter
+  const host = process.env.SMTP_HOST
+  const port = Number(process.env.SMTP_PORT || 465)
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASSWORD
+  if (!host || !user || !pass) throw new Error('Konfigurasi SMTP belum lengkap')
+
+  transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: process.env.SMTP_SECURE !== 'false',
+    auth: { user, pass },
+  })
+  return transporter
+}
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({
     '&': '&amp;',
@@ -14,33 +36,17 @@ async function sendEmail(input: {
   html: string
   idempotencyKey?: string
 }) {
-  const apiKey = process.env.RESEND_API_KEY
   const from = process.env.EMAIL_FROM
-  if (!apiKey || !from) throw new Error('Konfigurasi email belum lengkap')
+  if (!from) throw new Error('EMAIL_FROM belum diisi')
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'User-Agent': 'JapriPay/1.0',
-      ...(input.idempotencyKey ? { 'Idempotency-Key': input.idempotencyKey } : {}),
-    },
-    body: JSON.stringify({
-      from,
-      to: [input.email],
-      subject: input.subject,
-      html: input.html,
-    }),
+  const result = await getTransporter().sendMail({
+    from,
+    to: input.email,
+    subject: input.subject,
+    html: input.html,
+    ...(input.idempotencyKey ? { headers: { 'X-Entity-Ref-ID': input.idempotencyKey } } : {}),
   })
-
-  const responseText = await response.text()
-  if (!response.ok) {
-    throw new Error(`Resend gagal (${response.status}): ${responseText || 'Tidak ada detail respons'}`)
-  }
-
-  return responseText ? JSON.parse(responseText) as { id?: string } : {}
+  return { id: result.messageId }
 }
 
 export async function sendPasswordResetEmail(input: { email: string; name: string; resetUrl: string }) {
