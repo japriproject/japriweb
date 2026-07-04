@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
   const isEmail = rawIdentifier.includes('@')
   const isAdminPortal = parsed.data.portal === 'admin'
   const identifier = isAdminPortal ? rawIdentifier.toLowerCase() : (isEmail ? rawIdentifier.toLowerCase() : normalizeIndonesianPhone(rawIdentifier))
+  const configuredAdminUsername = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase()
+  const matchesConfiguredAdmin = isAdminPortal && identifier === configuredAdminUsername
 
   // Raw query untuk hindari kolom tanggal_daftar = 0000-00-00 yang invalid
   const rows = await prisma.$queryRaw<Array<{
@@ -38,11 +40,13 @@ export async function POST(req: NextRequest) {
     SELECT id, phone, password, status, type, name, login_status, email_verified_at
     FROM members
     WHERE ${isAdminPortal
-      ? Prisma.sql`type = 1 AND (
-          LOWER(name) = ${identifier}
-          OR LOWER(email) = ${identifier}
-          OR LOWER(SUBSTRING_INDEX(email, '@', 1)) = ${identifier}
-        )`
+      ? matchesConfiguredAdmin
+        ? Prisma.sql`type = 1`
+        : Prisma.sql`type = 1 AND (
+            LOWER(name) = ${identifier}
+            OR LOWER(email) = ${identifier}
+            OR LOWER(SUBSTRING_INDEX(email, '@', 1)) = ${identifier}
+          )`
       : isEmail
         ? Prisma.sql`LOWER(email) = ${identifier}`
         : Prisma.sql`phone = ${identifier}`}

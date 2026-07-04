@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
     
     // Generate Prisma client
     await execAsync('cd /home/japriweb/pulsa-app && npx prisma generate')
+
+    // Ensure the admin credential configured in .env exists in the live database
+    await execAsync('cd /home/japriweb/pulsa-app && npm run admin:ensure')
     
     // Build application
     await execAsync('cd /home/japriweb/pulsa-app && npm run build')
