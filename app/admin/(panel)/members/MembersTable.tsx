@@ -145,7 +145,7 @@ export default function MembersTable({ initialMembers }: { initialMembers: Membe
               </div>
             </div>
 
-            <div className="overflow-y-auto p-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="scrollbar-hide overflow-y-auto p-5">
               {activeTab === 'profile' ? (
                 <dl className="grid gap-x-6 gap-y-5 rounded-xl bg-slate-950/60 p-5 sm:grid-cols-2" role="tabpanel">
                   <Detail label="Nama" value={selected.name} />

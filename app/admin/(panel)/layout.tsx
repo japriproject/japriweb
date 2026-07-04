@@ -7,7 +7,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin()
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-slate-100 lg:overflow-hidden">
+    <div className="admin-shell fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-slate-100 lg:overflow-hidden">
       <div className="min-h-screen lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[260px_1fr]">
         <aside className="border-b border-white/10 bg-slate-950/95 lg:fixed lg:inset-y-0 lg:w-[260px] lg:border-b-0 lg:border-r">
           <div className="flex h-20 items-center gap-3 px-5">

@@ -93,6 +93,48 @@ body {
   display: none;
 }
 
+/* Admin: scrollbar tipis agar tidak menutupi atau memecah desain panel */
+.admin-shell,
+.admin-shell * {
+  scrollbar-color: rgba(139, 92, 246, 0.55) transparent;
+  scrollbar-width: thin;
+}
+
+.admin-shell::-webkit-scrollbar,
+.admin-shell *::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.admin-shell::-webkit-scrollbar-track,
+.admin-shell *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-shell::-webkit-scrollbar-thumb,
+.admin-shell *::-webkit-scrollbar-thumb {
+  min-height: 40px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.55);
+  background-clip: padding-box;
+}
+
+.admin-shell::-webkit-scrollbar-thumb:hover,
+.admin-shell *::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.85);
+  background-clip: padding-box;
+}
+
+.admin-shell .scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.admin-shell .scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Pulse ring animation */
 @keyframes pulseRing {
   0% { transform: scale(0.8); opacity: 0.8; }
