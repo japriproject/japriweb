@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
       refId,
       command: 'inq-pasca',
     })
+    const providerAmount = getDigiflazzPascaAmount(result)
+    const margin = Math.max(0, Number(pascaItem.sale) - Number(pascaItem.price))
 
     return NextResponse.json({
       refId,
@@ -48,7 +50,9 @@ export async function POST(req: NextRequest) {
       admin: result.admin ?? 0,
       price: result.price ?? 0,
       sellingPrice: result.selling_price ?? 0,
-      totalAmount: getDigiflazzPascaAmount(result),
+      providerAmount,
+      margin,
+      totalAmount: providerAmount + margin,
       desc: result.desc ?? null,
       raw: result,
     })

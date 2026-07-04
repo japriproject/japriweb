@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       FROM transaksi
       WHERE invoice = ${merchantOrderId} AND type = 7
       LIMIT 1
+      FOR UPDATE
     `
 
     const trx = rows[0]

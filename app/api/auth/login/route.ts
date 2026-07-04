@@ -13,7 +13,7 @@ const schema = z.object({
   noHp: z.string().min(3).max(100).optional(),
   password: z.string().min(1),
   portal: z.enum(['member', 'admin']).default('member'),
-}).refine((data) => data.identifier || data.noHp, { message: 'Email atau nomor HP wajib diisi' })
+}).refine((data) => data.identifier || data.noHp, { message: 'Username, email, atau nomor HP wajib diisi' })
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
@@ -28,23 +28,37 @@ export async function POST(req: NextRequest) {
   const { password } = parsed.data
   const rawIdentifier = (parsed.data.identifier || parsed.data.noHp || '').trim()
   const isEmail = rawIdentifier.includes('@')
-  const identifier = isEmail ? rawIdentifier.toLowerCase() : normalizeIndonesianPhone(rawIdentifier)
+  const isAdminPortal = parsed.data.portal === 'admin'
+  const identifier = isAdminPortal ? rawIdentifier.toLowerCase() : (isEmail ? rawIdentifier.toLowerCase() : normalizeIndonesianPhone(rawIdentifier))
 
   // Raw query untuk hindari kolom tanggal_daftar = 0000-00-00 yang invalid
   const rows = await prisma.$queryRaw<Array<{
     id: number; phone: string; password: string; status: number; type: number; name: string; login_status: number; email_verified_at: Date | null
-  }>>`SELECT id, phone, password, status, type, name, login_status, email_verified_at FROM members WHERE ${isEmail ? Prisma.sql`LOWER(email) = ${identifier}` : Prisma.sql`phone = ${identifier}`} LIMIT 1`
+  }>>`
+    SELECT id, phone, password, status, type, name, login_status, email_verified_at
+    FROM members
+    WHERE ${isAdminPortal
+      ? Prisma.sql`type = 1 AND (
+          LOWER(name) = ${identifier}
+          OR LOWER(email) = ${identifier}
+          OR LOWER(SUBSTRING_INDEX(email, '@', 1)) = ${identifier}
+        )`
+      : isEmail
+        ? Prisma.sql`LOWER(email) = ${identifier}`
+        : Prisma.sql`phone = ${identifier}`}
+    LIMIT 1
+  `
 
   const member = rows[0] ?? null
   if (!member) {
-    return NextResponse.json({ error: 'Email/nomor HP atau password salah' }, { status: 401 })
+    return NextResponse.json({ error: isAdminPortal ? 'Username atau password salah' : 'Email/nomor HP atau password salah' }, { status: 401 })
   }
 
-  if (isEmail && !member.email_verified_at) {
+  if (!isAdminPortal && isEmail && !member.email_verified_at) {
     return NextResponse.json({ error: 'Email belum diverifikasi. Masuk dengan nomor HP lalu verifikasi email di halaman profil.' }, { status: 403 })
   }
 
-  if (member.login_status === 1) {
+  if (!isAdminPortal && member.login_status === 1) {
     return NextResponse.json({ error: 'Akun sedang login di perangkat lain' }, { status: 403 })
   }
 
@@ -52,10 +66,10 @@ export async function POST(req: NextRequest) {
   const passwordMatches = usesBcrypt
     ? await bcrypt.compare(password, member.password)
     : createHash('md5').update(password).digest('hex') === member.password
-  if (!passwordMatches) return NextResponse.json({ error: 'Email/nomor HP atau password salah' }, { status: 401 })
+  if (!passwordMatches) return NextResponse.json({ error: isAdminPortal ? 'Username atau password salah' : 'Email/nomor HP atau password salah' }, { status: 401 })
 
   const isAdmin = member.type === 1
-  if (parsed.data.portal === 'admin' && !isAdmin) {
+  if (isAdminPortal && !isAdmin) {
     return NextResponse.json({ error: 'Akun tidak memiliki akses admin' }, { status: 403 })
   }
   if (parsed.data.portal === 'member' && isAdmin) {

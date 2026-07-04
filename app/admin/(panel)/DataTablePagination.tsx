@@ -1,14 +1,15 @@
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-type Props = { page: number; pageSize: number; totalRows: number; path: string; query?: string }
+type Props = { page: number; pageSize: number; totalRows: number; path: string; query?: string; params?: Record<string, string> }
 
-export default function DataTablePagination({ page, pageSize, totalRows, path, query = '' }: Props) {
+export default function DataTablePagination({ page, pageSize, totalRows, path, query = '', params: extraParams = {} }: Props) {
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
   const from = totalRows === 0 ? 0 : (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, totalRows)
   const href = (nextPage: number, nextSize = pageSize) => {
     const params = new URLSearchParams()
+    Object.entries(extraParams).forEach(([key, value]) => value && params.set(key, value))
     if (query) params.set('q', query)
     params.set('page', String(nextPage))
     params.set('perPage', String(nextSize))

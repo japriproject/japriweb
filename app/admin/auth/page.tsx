@@ -65,10 +65,10 @@ export default function AdminLoginPage() {
           )}
 
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-300">Email atau nomor HP</span>
+            <span className="mb-2 block text-sm font-medium text-slate-300">Username</span>
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950 px-4 focus-within:border-violet-500">
               <UserRound size={18} className="text-slate-500" />
-              <input value={identifier} onChange={(event) => setIdentifier(event.target.value)} required autoComplete="username" placeholder="admin@domain.com" className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-slate-600" />
+              <input value={identifier} onChange={(event) => setIdentifier(event.target.value)} required autoComplete="username" placeholder="Masukkan username admin" className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-slate-600" />
             </div>
           </label>
 

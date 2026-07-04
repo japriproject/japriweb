@@ -17,11 +17,11 @@ export default async function AdminPage() {
       SELECT
         (SELECT COUNT(*) FROM members WHERE type <> 1) AS totalMembers,
         (SELECT COUNT(*) FROM transaksi WHERE type <> 7) AS totalTransactions,
-        (SELECT COUNT(*) FROM transaksi WHERE type = 7 AND status = 0) AS pendingTopups
+        (SELECT COUNT(*) FROM transaksi WHERE type = 7 AND status = 0 AND product NOT LIKE 'BONUS_%') AS pendingTopups
     `,
     prisma.$queryRaw<PendingTopup[]>`
       SELECT id, invoice, members, product, sale, price, created_at
-      FROM transaksi WHERE type = 7 AND status = 0 ORDER BY created_at DESC LIMIT 8
+      FROM transaksi WHERE type = 7 AND status = 0 AND product NOT LIKE 'BONUS_%' ORDER BY created_at DESC LIMIT 8
     `,
     fetchDigiflazzBalance().then((balance) => ({ balance, error: false })).catch(() => ({ balance: 0, error: true })),
   ])

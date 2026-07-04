@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { Eye, KeyRound, Loader2, LogIn, LogOut, Save, Wallet, X } from 'lucide-react'
+import { Eye, KeyRound, Loader2, LogIn, LogOut, Save, ShieldCheck, UserRound, Wallet, X } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
 
 export type MemberRow = {
@@ -26,12 +26,14 @@ type MemberDetail = MemberRow & {
 }
 
 type EditMode = 'password' | 'saldo' | 'loginStatus'
+type DetailTab = 'profile' | 'account'
 
 export default function MembersTable({ initialMembers }: { initialMembers: MemberRow[] }) {
   const [members, setMembers] = useState(initialMembers)
   const [selected, setSelected] = useState<MemberDetail | null>(null)
   const [loadingDetail, setLoadingDetail] = useState<number | null>(null)
   const [editMode, setEditMode] = useState<EditMode | null>(null)
+  const [activeTab, setActiveTab] = useState<DetailTab>('profile')
   const [value, setValue] = useState('')
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -44,6 +46,8 @@ export default function MembersTable({ initialMembers }: { initialMembers: Membe
       const data = await response.json()
       if (!response.ok) throw new Error(data.error ?? 'Gagal mengambil detail member')
       setSelected(data.member)
+      setActiveTab('profile')
+      setEditMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Gagal mengambil detail member')
     } finally {
@@ -96,6 +100,7 @@ export default function MembersTable({ initialMembers }: { initialMembers: Membe
     if (pending) return
     setSelected(null)
     setEditMode(null)
+    setActiveTab('profile')
     setMessage('')
   }
 
@@ -127,47 +132,63 @@ export default function MembersTable({ initialMembers }: { initialMembers: Membe
 
       {selected && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="member-detail-title">
-          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
-            <div className="sticky top-0 flex items-center justify-between border-b border-white/10 bg-slate-900 px-5 py-4">
-              <div><h2 id="member-detail-title" className="font-bold">Detail member</h2><p className="text-xs text-slate-500">{selected.name} · {selected.phone}</p></div>
+          <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
+              <div><h2 id="member-detail-title" className="font-bold">Detail member</h2><p className="mt-0.5 text-xs text-slate-500">{selected.name} · {selected.phone}</p></div>
               <button type="button" onClick={closeModal} aria-label="Tutup" className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"><X size={19} /></button>
             </div>
 
-            <div className="space-y-6 p-5">
-              <dl className="grid gap-4 rounded-xl bg-slate-950/60 p-4 sm:grid-cols-2">
-                <Detail label="Nama" value={selected.name} />
-                <Detail label="Nomor HP" value={selected.phone} />
-                <Detail label="Email" value={selected.email || '-'} />
-                <Detail label="Perusahaan" value={selected.perusahaan || '-'} />
-                <Detail label="Saldo" value={formatRupiah(selected.saldo)} />
-                <Detail label="Status login" value={selected.loginStatus === 1 ? 'Sedang login' : 'Logout'} />
-                <Detail label="Login terakhir" value={formatDate(selected.lastLogin)} />
-                <Detail label="Logout terakhir" value={formatDate(selected.dateLogout)} />
-                <Detail label="Alamat" value={[selected.address, selected.kelurahan, selected.kecamatan, selected.kabupaten, selected.provinsi].filter(Boolean).join(', ') || '-'} wide />
-              </dl>
-
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-slate-300">Tindakan admin</h3>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <ActionButton icon={<KeyRound size={16} />} label="Ubah password" onClick={() => startEdit('password')} />
-                  <ActionButton icon={<Wallet size={16} />} label="Ubah saldo" onClick={() => startEdit('saldo')} />
-                  <ActionButton icon={selected.loginStatus === 1 ? <LogOut size={16} /> : <LogIn size={16} />} label="Status login" onClick={() => startEdit('loginStatus')} />
-                </div>
+            <div className="shrink-0 border-b border-white/10 px-5">
+              <div className="flex gap-1" role="tablist" aria-label="Detail member">
+                <TabButton active={activeTab === 'profile'} icon={<UserRound size={16} />} label="Profil" onClick={() => { setActiveTab('profile'); setEditMode(null) }} />
+                <TabButton active={activeTab === 'account'} icon={<ShieldCheck size={16} />} label="Akun & Saldo" onClick={() => setActiveTab('account')} />
               </div>
+            </div>
 
-              {editMode && (
-                <form onSubmit={submitUpdate} className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-                  <label className="mb-2 block text-sm font-semibold">{editMode === 'password' ? 'Password baru' : editMode === 'saldo' ? 'Saldo baru' : 'Status login baru'}</label>
-                  {editMode === 'loginStatus' ? (
-                    <select value={value} onChange={(event) => setValue(event.target.value)} className="h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm outline-none focus:border-violet-500"><option value="0">Logout</option><option value="1">Sedang login</option></select>
-                  ) : (
-                    <input type={editMode === 'password' ? 'password' : 'number'} min={editMode === 'saldo' ? 0 : undefined} max={editMode === 'saldo' ? 2147483647 : undefined} minLength={editMode === 'password' ? 6 : undefined} required value={value} onChange={(event) => setValue(event.target.value)} autoComplete={editMode === 'password' ? 'new-password' : 'off'} className="h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm outline-none focus:border-violet-500" />
+            <div className="overflow-y-auto p-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {activeTab === 'profile' ? (
+                <dl className="grid gap-x-6 gap-y-5 rounded-xl bg-slate-950/60 p-5 sm:grid-cols-2" role="tabpanel">
+                  <Detail label="Nama" value={selected.name} />
+                  <Detail label="Nomor HP" value={selected.phone} />
+                  <Detail label="Email" value={selected.email || '-'} />
+                  <Detail label="Perusahaan" value={selected.perusahaan || '-'} />
+                  <Detail label="Terdaftar" value={formatDate(selected.createdAt)} />
+                  <Detail label="Alamat" value={[selected.address, selected.kelurahan, selected.kecamatan, selected.kabupaten, selected.provinsi].filter(Boolean).join(', ') || '-'} wide />
+                </dl>
+              ) : (
+                <div className="space-y-5" role="tabpanel">
+                  <dl className="grid gap-3 sm:grid-cols-3">
+                    <SummaryCard label="Saldo aktif" value={formatRupiah(selected.saldo)} />
+                    <SummaryCard label="Status login" value={selected.loginStatus === 1 ? 'Sedang login' : 'Logout'} />
+                    <SummaryCard label="Login terakhir" value={formatDate(selected.lastLogin)} />
+                  </dl>
+
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold text-slate-300">Tindakan admin</h3>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <ActionButton icon={<KeyRound size={16} />} label="Ubah password" onClick={() => startEdit('password')} />
+                      <ActionButton icon={<Wallet size={16} />} label="Ubah saldo" onClick={() => startEdit('saldo')} />
+                      <ActionButton icon={selected.loginStatus === 1 ? <LogOut size={16} /> : <LogIn size={16} />} label="Status login" onClick={() => startEdit('loginStatus')} />
+                    </div>
+                  </div>
+
+                  {editMode && (
+                    <form onSubmit={submitUpdate} className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+                      <label className="mb-2 block text-sm font-semibold">{editMode === 'password' ? 'Password baru' : editMode === 'saldo' ? 'Saldo baru' : 'Status login baru'}</label>
+                      {editMode === 'loginStatus' ? (
+                        <select value={value} onChange={(event) => setValue(event.target.value)} className="h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm outline-none focus:border-violet-500"><option value="0">Logout</option><option value="1">Sedang login</option></select>
+                      ) : (
+                        <input type={editMode === 'password' ? 'password' : 'number'} min={editMode === 'saldo' ? 0 : undefined} max={editMode === 'saldo' ? 2147483647 : undefined} minLength={editMode === 'password' ? 6 : undefined} required value={value} onChange={(event) => setValue(event.target.value)} autoComplete={editMode === 'password' ? 'new-password' : 'off'} className="h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm outline-none focus:border-violet-500" />
+                      )}
+                      <div className="mt-3 flex gap-2"><button type="submit" disabled={pending} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold hover:bg-violet-500 disabled:opacity-50">{pending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Simpan</button><button type="button" onClick={() => setEditMode(null)} disabled={pending} className="rounded-lg px-4 py-2.5 text-sm text-slate-400 hover:bg-white/5">Batal</button></div>
+                    </form>
                   )}
-                  <div className="mt-3 flex gap-2"><button type="submit" disabled={pending} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold hover:bg-violet-500 disabled:opacity-50">{pending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Simpan</button><button type="button" onClick={() => setEditMode(null)} disabled={pending} className="rounded-lg px-4 py-2.5 text-sm text-slate-400 hover:bg-white/5">Batal</button></div>
-                </form>
+
+                  <dl className="rounded-xl bg-slate-950/60 p-4"><Detail label="Logout terakhir" value={formatDate(selected.dateLogout)} /></dl>
+                </div>
               )}
 
-              {message && <p className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">{message}</p>}
+              {message && <p className="mt-5 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">{message}</p>}
             </div>
           </div>
         </div>
@@ -177,11 +198,19 @@ export default function MembersTable({ initialMembers }: { initialMembers: Membe
 }
 
 function Detail({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
-  return <div className={wide ? 'sm:col-span-2' : ''}><dt className="text-xs uppercase tracking-wide text-slate-600">{label}</dt><dd className="mt-1 text-sm text-slate-200">{value}</dd></div>
+  return <div className={wide ? 'sm:col-span-2' : ''}><dt className="text-xs uppercase tracking-wide text-slate-600">{label}</dt><dd className="mt-1 break-words text-sm text-slate-200">{value}</dd></div>
 }
 
 function ActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return <button type="button" onClick={onClick} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm font-medium text-slate-300 hover:border-violet-500/40 hover:text-white">{icon}{label}</button>
+}
+
+function TabButton({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
+  return <button type="button" role="tab" aria-selected={active} onClick={onClick} className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${active ? 'border-violet-500 text-violet-300' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>{icon}{label}</button>
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl bg-slate-950/60 p-4"><dt className="text-xs uppercase tracking-wide text-slate-600">{label}</dt><dd className="mt-2 text-sm font-semibold text-slate-200">{value}</dd></div>
 }
 
 function formatDate(value: string | null) {

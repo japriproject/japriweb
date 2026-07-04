@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
 
   let produkNama = ''
   let hargaJual = 0
+  let hargaProvider = 0
   let kodeProduk = ''
 
   if (productType === 'pasca') {
@@ -51,7 +52,9 @@ export async function POST(req: NextRequest) {
       command: 'inq-pasca',
     })
 
-    hargaJual = toInt(getDigiflazzPascaAmount(inquiry))
+    hargaProvider = toInt(getDigiflazzPascaAmount(inquiry))
+    const margin = Math.max(0, toInt(pascaItem.sale) - toInt(pascaItem.price))
+    hargaJual = hargaProvider + margin
     if (hargaJual <= 0) {
       return NextResponse.json({ error: inquiry.message || 'Tagihan tidak valid' }, { status: 400 })
     }
@@ -60,6 +63,7 @@ export async function POST(req: NextRequest) {
     if (!pulsaItem) return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 })
     produkNama = pulsaItem.name
     hargaJual = toInt(pulsaItem.sale)
+    hargaProvider = toInt(pulsaItem.price)
     kodeProduk = pulsaItem.code
   }
 
@@ -92,7 +96,7 @@ export async function POST(req: NextRequest) {
         product: kodeProduk,
         customers: normalizePhone(nomorTujuan) || nomorTujuan,
         sale: hargaJual,
-        price: hargaJual,
+        price: hargaProvider,
         admin: 0,
         status: 0,
         type: productType === 'pasca' ? 2 : 1,
