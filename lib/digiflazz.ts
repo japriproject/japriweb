@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'crypto'
 
 const DIGIFLAZZ_URL = 'https://api.digiflazz.com/v1/transaction'
 const DIGIFLAZZ_PRICE_LIST_URL = 'https://api.digiflazz.com/v1/price-list'
+const DIGIFLAZZ_BALANCE_URL = 'https://api.digiflazz.com/v1/cek-saldo'
 const DIGIFLAZZ_HOTEL_URL = process.env.DIGIFLAZZ_HOTEL_URL ?? 'https://api.digiflazz.com/v1/hotel'
 
 export type DigiflazzStatus = 'Sukses' | 'Pending' | 'Gagal'
@@ -145,6 +146,25 @@ export function digiflazzStatusToCode(status: string) {
   if (normalized === 'sukses') return 1
   if (normalized === 'gagal') return 2
   return 0
+}
+
+export async function fetchDigiflazzBalance(): Promise<number> {
+  const config = getConfig()
+  const response = await fetch(DIGIFLAZZ_BALANCE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cmd: 'deposit',
+      username: config.username,
+      sign: md5(config.username + config.apiKey + 'depo'),
+    }),
+    cache: 'no-store',
+  })
+  const body = await response.json().catch(() => null) as { data?: { deposit?: number }; message?: string } | null
+  if (!response.ok || typeof body?.data?.deposit !== 'number') {
+    throw new Error(body?.message || `Digiflazz ${response.status}: gagal mengambil saldo`)
+  }
+  return body.data.deposit
 }
 
 export async function fetchDigiflazzPrepaidPriceList(): Promise<DigiflazzPrepaidProduct[]> {

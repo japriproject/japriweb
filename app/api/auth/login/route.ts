@@ -12,6 +12,7 @@ const schema = z.object({
   identifier: z.string().min(3).max(100).optional(),
   noHp: z.string().min(3).max(100).optional(),
   password: z.string().min(1),
+  portal: z.enum(['member', 'admin']).default('member'),
 }).refine((data) => data.identifier || data.noHp, { message: 'Email atau nomor HP wajib diisi' })
 
 export async function POST(req: NextRequest) {
@@ -53,13 +54,21 @@ export async function POST(req: NextRequest) {
     : createHash('md5').update(password).digest('hex') === member.password
   if (!passwordMatches) return NextResponse.json({ error: 'Email/nomor HP atau password salah' }, { status: 401 })
 
+  const isAdmin = member.type === 1
+  if (parsed.data.portal === 'admin' && !isAdmin) {
+    return NextResponse.json({ error: 'Akun tidak memiliki akses admin' }, { status: 403 })
+  }
+  if (parsed.data.portal === 'member' && isAdmin) {
+    return NextResponse.json({ error: 'Gunakan halaman login admin' }, { status: 403 })
+  }
+
   if (!usesBcrypt) {
     const upgradedHash = await bcrypt.hash(password, 12)
     await prisma.$executeRaw`UPDATE members SET password = ${upgradedHash} WHERE id = ${member.id}`
   }
 
   // type 1 = admin, 0 = member
-  const role = member.type === 1 ? 'admin' : 'member'
+  const role = isAdmin ? 'admin' : 'member'
   const token = await signToken({ userId: member.id, phone: member.phone, role })
 
   // Update login_status = 1 dan date_login

@@ -2,6 +2,7 @@
 import { verifyToken } from '@/lib/auth'
 
 const PUBLIC = [
+  '/admin/auth',
   '/login',
   '/register',
   '/forgot-password',
@@ -30,7 +31,8 @@ export async function middleware(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    return NextResponse.redirect(new URL('/login', req.url))
+    const loginPath = pathname.startsWith('/admin') ? '/admin/auth' : '/login'
+    return NextResponse.redirect(new URL(loginPath, req.url))
   }
 
   const payload = await verifyToken(token)
@@ -41,7 +43,8 @@ export async function middleware(req: NextRequest) {
       return res
     }
 
-    const res = NextResponse.redirect(new URL('/login', req.url))
+    const loginPath = pathname.startsWith('/admin') ? '/admin/auth' : '/login'
+    const res = NextResponse.redirect(new URL(loginPath, req.url))
     res.cookies.delete('pulsa_token')
     return res
   }
