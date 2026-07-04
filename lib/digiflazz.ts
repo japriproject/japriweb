@@ -54,6 +54,11 @@ export type DigiflazzPostpaidProduct = {
   desc?: unknown
 }
 
+type DigiflazzPostpaidPriceListResponse = {
+  data?: unknown
+  message?: string
+}
+
 type DigiflazzRequest = {
   buyerSkuCode: string
   customerNo: string
@@ -204,47 +209,73 @@ export async function fetchDigiflazzPrepaidPriceList(): Promise<DigiflazzPrepaid
 
 export async function fetchDigiflazzPostpaidPriceList(): Promise<DigiflazzPostpaidProduct[]> {
   const config = getConfig()
-  const commands = ['pasca', 'postpaid', 'pascabayar'] as const
-  let lastError: string | null = null
+  const payload: Record<string, unknown> = {
+    cmd: 'pasca',
+    username: config.username,
+    sign: md5(config.username + config.apiKey + 'pricelist'),
+  }
 
-  for (const cmd of commands) {
-    const payload: Record<string, unknown> = {
-      cmd,
-      username: config.username,
-      sign: md5(config.username + config.apiKey + 'pricelist'),
-    }
+  if (config.testing) payload.testing = true
 
-    if (config.testing) payload.testing = true
+  const response = await fetch(DIGIFLAZZ_PRICE_LIST_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
 
+  const responseText = await response.text()
+  let body: DigiflazzPostpaidPriceListResponse | null = null
+
+  if (responseText) {
     try {
-      const response = await fetch(DIGIFLAZZ_PRICE_LIST_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      const responseText = await response.text()
-      let body: { data?: DigiflazzPostpaidProduct[]; message?: string } | null = null
-
-      if (responseText) {
-        try {
-          body = JSON.parse(responseText) as { data?: DigiflazzPostpaidProduct[]; message?: string }
-        } catch {
-          body = null
-        }
-      }
-
-      if (response.ok && Array.isArray(body?.data) && body.data.length > 0) {
-        return body.data
-      }
-
-      lastError = body?.message || responseText || `Digiflazz ${response.status}: invalid postpaid price list response`
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : 'Request daftar harga pascabayar Digiflazz gagal'
+      body = JSON.parse(responseText) as DigiflazzPostpaidPriceListResponse
+    } catch {
+      body = null
     }
   }
 
-  throw new Error(lastError || 'Request daftar harga pascabayar Digiflazz gagal')
+  if (!response.ok || !Array.isArray(body?.data)) {
+    const message = body?.message || responseText || 'Request daftar harga pascabayar Digiflazz gagal'
+    throw new Error(`Digiflazz ${response.status}: ${message}`)
+  }
+
+  const products = body.data.map(normalizePostpaidProduct).filter((product): product is DigiflazzPostpaidProduct => {
+    return product !== null
+  })
+
+  if (products.length === 0 && body.data.length > 0) {
+    throw new Error('Respons daftar harga Digiflazz bukan format produk pascabayar. Sinkronisasi dibatalkan agar produk prabayar tidak masuk tabel pasca.')
+  }
+
+  return products
+}
+
+function normalizePostpaidProduct(value: unknown): DigiflazzPostpaidProduct | null {
+  if (!value || typeof value !== 'object') return null
+
+  const product = value as Record<string, unknown>
+  const buyerSkuCode = typeof product.buyer_sku_code === 'string' ? product.buyer_sku_code.trim() : ''
+  const productName = typeof product.product_name === 'string' ? product.product_name.trim() : ''
+  const category = typeof product.category === 'string' ? product.category.trim() : ''
+  const brand = typeof product.brand === 'string' ? product.brand.trim() : ''
+  const admin = Number(product.admin)
+  const hasPrepaidOnlyFields = 'price' in product || 'type' in product || 'unlimited_stock' in product || 'stock' in product
+
+  if (!buyerSkuCode || !productName || !category || !brand || !Number.isFinite(admin) || hasPrepaidOnlyFields) {
+    return null
+  }
+
+  return {
+    buyer_sku_code: buyerSkuCode,
+    product_name: productName,
+    category,
+    brand,
+    admin,
+    commission: Number.isFinite(Number(product.commission)) ? Number(product.commission) : undefined,
+    buyer_product_status: typeof product.buyer_product_status === 'boolean' ? product.buyer_product_status : undefined,
+    seller_product_status: typeof product.seller_product_status === 'boolean' ? product.seller_product_status : undefined,
+    desc: product.desc,
+  }
 }
 
 export async function sendDigiflazzTransaction({

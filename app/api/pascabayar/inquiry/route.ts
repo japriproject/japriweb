@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Digiflazz inquiry error:', error)
-    return NextResponse.json({ error: 'Gagal cek tagihan ke provider' }, { status: 502 })
+    const providerMessage = error instanceof Error ? error.message : 'Gagal cek tagihan ke provider'
+    return NextResponse.json({ error: providerMessage }, { status: 502 })
   }
 }

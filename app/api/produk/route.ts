@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
       if (kategori && brand) {
         rows = await prisma.$queryRaw<any[]>`
           SELECT * FROM pasca
-          WHERE LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
+          WHERE LOWER(kategori) LIKE '%pasca%'
+          AND LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
           AND LOWER(brand) = LOWER(${brand})
           AND CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
@@ -26,21 +27,24 @@ export async function GET(req: NextRequest) {
       } else if (kategori) {
         rows = await prisma.$queryRaw<any[]>`
           SELECT * FROM pasca
-          WHERE LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
+          WHERE LOWER(kategori) LIKE '%pasca%'
+          AND LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
           AND CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
         `
       } else if (brand) {
         rows = await prisma.$queryRaw<any[]>`
           SELECT * FROM pasca
-          WHERE LOWER(brand) = LOWER(${brand})
+          WHERE LOWER(kategori) LIKE '%pasca%'
+          AND LOWER(brand) = LOWER(${brand})
           AND CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
         `
       } else {
         rows = await prisma.$queryRaw<any[]>`
           SELECT * FROM pasca
-          WHERE CAST(status AS CHAR) = '1'
+          WHERE LOWER(kategori) LIKE '%pasca%'
+          AND CAST(status AS CHAR) = '1'
           ORDER BY sale ASC
           LIMIT 50
         `

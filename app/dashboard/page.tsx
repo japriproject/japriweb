@@ -68,7 +68,9 @@ export default async function DashboardPage() {
       SELECT DISTINCT kategori FROM pulsa ORDER BY kategori ASC
     `,
     prisma.$queryRaw<Array<{ brand: string }>>`
-      SELECT DISTINCT brand FROM pasca ORDER BY brand ASC
+      SELECT DISTINCT brand FROM pasca
+      WHERE LOWER(kategori) LIKE '%pasca%'
+      ORDER BY brand ASC
     `,
   ])
 

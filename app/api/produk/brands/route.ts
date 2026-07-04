@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
     if (type === 'pasca') {
       const brands = await prisma.$queryRaw<Array<{ brand: string }>>`
         SELECT DISTINCT brand FROM pasca
-        WHERE LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
+        WHERE LOWER(kategori) LIKE '%pasca%'
+        AND LOWER(kategori) LIKE LOWER(CONCAT('%', ${kategori}, '%'))
         ORDER BY brand ASC
       `
 
