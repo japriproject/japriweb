@@ -74,7 +74,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     <div className="mx-auto max-w-7xl p-5 sm:p-8">
       <header className="mb-6">
         <p className="text-sm font-medium text-violet-400">Operasional</p>
-        <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold"><ReceiptText className="text-slate-500" /> Daftar transaksi</h1>
+        <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold"><ReceiptText className="text-slate-500" /> History transactions</h1>
         <p className="mt-2 text-sm text-slate-400">Data transaksi dengan pagination server-side.</p>
       </header>
       <form className="mb-5 flex max-w-md items-center gap-2 rounded-xl border border-white/10 bg-slate-900 px-4 py-3 focus-within:border-violet-500">

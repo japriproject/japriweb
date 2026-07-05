@@ -18,6 +18,24 @@ export async function signToken(payload: JWTPayload) {
     .sign(SECRET)
 }
 
+export async function signAdminOtpChallenge(userId: number, setup: boolean) {
+  return new SignJWT({ userId, setup, purpose: 'admin-otp' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('10m')
+    .sign(SECRET)
+}
+
+export async function verifyAdminOtpChallenge(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, SECRET)
+    if (payload.purpose !== 'admin-otp') return null
+    return { userId: Number(payload.userId), setup: Boolean(payload.setup) }
+  } catch {
+    return null
+  }
+}
+
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET)

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { signToken, setTokenCookie } from '@/lib/auth'
+import { signAdminOtpChallenge, signToken, setTokenCookie } from '@/lib/auth'
+import { createTotpSetup, getOrCreateAdminTotp } from '@/lib/admin-totp'
 import { rateLimit } from '@/lib/rateLimit'
 import { normalizeIndonesianPhone } from '@/lib/phone'
 import { createHash } from 'crypto'
@@ -83,6 +84,20 @@ export async function POST(req: NextRequest) {
   if (!usesBcrypt) {
     const upgradedHash = await bcrypt.hash(password, 12)
     await prisma.$executeRaw`UPDATE members SET password = ${upgradedHash} WHERE id = ${member.id}`
+  }
+
+  if (isAdminPortal) {
+    const totp = await getOrCreateAdminTotp(member.id)
+    const setup = totp.enabled !== 1
+    const challengeToken = await signAdminOtpChallenge(member.id, setup)
+    const enrollment = setup ? await createTotpSetup(totp.secret, configuredAdminUsername) : null
+    return NextResponse.json({
+      requiresOtp: true,
+      setup,
+      challengeToken,
+      qrCode: enrollment?.qrCode,
+      manualKey: setup ? totp.secret : undefined,
+    }, { status: 202 })
   }
 
   // type 1 = admin, 0 = member
