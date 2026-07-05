@@ -13,9 +13,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin()
 
   return (
-    <div className="admin-shell fixed inset-0 z-50 min-w-[1200px] overflow-hidden bg-slate-950 text-slate-100">
-      <div className="grid h-full grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="fixed inset-y-0 w-[260px] border-r border-white/10 bg-slate-950/95">
+    <div className="admin-shell fixed inset-0 z-50 overflow-auto overscroll-contain bg-slate-950 text-slate-100">
+      <div className="grid min-h-full min-w-[1200px] grid-cols-[260px_minmax(0,1fr)]">
+        <aside className="sticky top-0 h-screen w-[260px] border-r border-white/10 bg-slate-950/95">
           <div className="flex h-20 items-center gap-3 px-5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 shadow-lg shadow-violet-950">
               <Smartphone size={20} />
@@ -56,7 +56,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <AdminLogout />
           </div>
         </aside>
-        <main className="col-start-2 h-full min-w-0 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">{children}</main>
+        <main className="col-start-2 min-h-screen min-w-0 [scrollbar-gutter:stable]">{children}</main>
       </div>
     </div>
   )
