@@ -12,6 +12,17 @@ import {
 } from 'lucide-react'
 
 type ProdukPasca = { id: string; nama: string; hargaJual: number; operator: string; kategori: string }
+type InquiryResult = {
+  refId: string
+  inquiryToken: string
+  customerName: string | null
+  billCount: number | null
+  admin: number
+  providerAmount: number
+  margin: number
+  totalAmount: number
+  message: string
+}
 
 type TipePasca = {
   key: string; label: string
@@ -60,6 +71,7 @@ function PascabayarContent() {
   const [produkError, setProdukError] = useState('')
   const [saldo, setSaldo] = useState(0)
   const [step, setStep] = useState<'form' | 'konfirmasi'>('form')
+  const [inquiry, setInquiry] = useState<InquiryResult | null>(null)
 
   const brands = BRANDS_BY_TIPE[activeTipe.key] ?? []
   const brandQuery = brand || brands[0] || activeTipe.label
@@ -128,26 +140,43 @@ function PascabayarContent() {
     setBrand(nextBrand)
     setStep('form')
     setSelected(null)
+    setInquiry(null)
     setError('')
     setProdukError('')
   }
 
-  function handleLanjut() {
+  async function handleLanjut() {
     if (!idPelanggan.trim()) return setError('Masukkan nomor/ID pelanggan')
     if (brands.length > 1 && !brand) return setError('Pilih penyedia layanan')
     if (!selected) return setError('Pilih name produk sesuai brand yang dipilih')
     setError('')
-    setStep('konfirmasi')
+    setLoading(true)
+    setInquiry(null)
+    try {
+      const response = await fetch('/api/pascabayar/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produkId: selected.id, nomorPelanggan: idPelanggan.trim() }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error ?? 'Gagal mengecek tagihan')
+      setInquiry(data)
+      setStep('konfirmasi')
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Gagal mengecek tagihan')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleBayar() {
-    if (!selected) return
+    if (!selected || !inquiry) return setError('Cek tagihan terlebih dahulu')
     setError('')
     setLoading(true)
     const res = await fetch('/api/transaksi', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produkId: selected.id, nomorTujuan: idPelanggan, productType: 'pasca' }),
+      body: JSON.stringify({ produkId: selected.id, nomorTujuan: idPelanggan.trim(), productType: 'pasca', inquiryToken: inquiry.inquiryToken }),
     })
     setLoading(false)
     if (!res.ok) { const d = await res.json(); return setError(d.error) }
@@ -235,7 +264,7 @@ function PascabayarContent() {
 
         <CustomerInput
           value={idPelanggan}
-          onChange={value => { setIdPelanggan(value); setStep('form'); setError('') }}
+          onChange={value => { setIdPelanggan(value); setStep('form'); setInquiry(null); setError('') }}
           label={activeTipe.inputLabel}
           placeholder={activeTipe.placeholder}
           inputMode="numeric"
@@ -262,6 +291,7 @@ function PascabayarContent() {
                     onClick={() => {
                       setSelected(p)
                       setStep('form')
+                      setInquiry(null)
                       setError('')
                     }}
                     className={`w-full flex items-center justify-between px-4 py-4 transition-all text-left btn-press ${active ? 'bg-violet-50' : 'hover:bg-gray-50'}`}
@@ -297,15 +327,15 @@ function PascabayarContent() {
         {step === 'form' && (
           <button
             onClick={handleLanjut}
-            disabled={loadProduk || !idPelanggan || !selected}
+            disabled={loadProduk || loading || !idPelanggan || !selected}
             className={`w-full py-4 bg-gradient-to-r ${activeTipe.gradient} text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all btn-press disabled:opacity-40 disabled:pointer-events-none shadow-lg`}
           >
-            <Search size={18} />
-            Lanjutkan
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+            {loading ? 'Mengecek tagihan...' : 'Cek Tagihan'}
           </button>
         )}
 
-        {step === 'konfirmasi' && selected && (
+        {step === 'konfirmasi' && selected && inquiry && (
           <>
             <div className="bg-violet-50 border border-violet-200/60 rounded-2xl p-4 space-y-3 slide-up">
               <div className="flex items-center gap-2">
@@ -316,18 +346,22 @@ function PascabayarContent() {
                 ['Layanan', activeTipe.label],
                 ['Name', selected!.nama],
                 [activeTipe.inputLabel, idPelanggan],
+                ['Nama Pelanggan', inquiry.customerName || '-'],
                 ['Penyedia', selected!.operator],
+                ['Nomor Invoice', inquiry.refId],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between text-sm gap-3">
                   <span className="text-gray-500">{k}</span>
                   <span className="font-semibold text-gray-800 text-right max-w-[60%]">{v}</span>
                 </div>
               ))}
+              <div className="flex justify-between text-sm pt-2 border-t border-violet-200/60"><span className="text-gray-500">Tagihan Provider</span><span className="font-semibold text-gray-800">{formatRupiah(inquiry.providerAmount)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-500">Margin</span><span className="font-semibold text-gray-800">{formatRupiah(inquiry.margin)}</span></div>
               <div className="flex justify-between text-sm pt-2 border-t border-violet-200/60">
                 <span className="text-gray-500">Total Bayar</span>
-                <span className="font-bold text-violet-600 text-base">{formatRupiah(selected!.hargaJual)}</span>
+                <span className="font-bold text-violet-600 text-base">{formatRupiah(inquiry.totalAmount)}</span>
               </div>
-              {saldo < selected!.hargaJual && (
+              {saldo < inquiry.totalAmount && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
                   <AlertCircle size={14} className="text-red-500 shrink-0" />
                   <p className="text-xs text-red-600 font-medium">
@@ -347,11 +381,11 @@ function PascabayarContent() {
               </button>
               <button
                 onClick={handleBayar}
-                disabled={loading || saldo < selected!.hargaJual}
+                disabled={loading || saldo < inquiry.totalAmount}
                 className={`flex-1 py-3.5 bg-gradient-to-r ${activeTipe.gradient} text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg btn-press disabled:opacity-40 disabled:pointer-events-none text-sm`}
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-                {loading ? 'Memproses...' : `Bayar ${formatRupiah(selected!.hargaJual)}`}
+                {loading ? 'Memproses...' : `Bayar ${formatRupiah(inquiry.totalAmount)}`}
               </button>
             </div>
           </>

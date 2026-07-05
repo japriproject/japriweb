@@ -8,6 +8,7 @@ export type JWTPayload = {
   userId: number
   phone: string
   role: string // 'admin' | 'member'
+  mfa?: boolean
 }
 
 export async function signToken(payload: JWTPayload) {
@@ -36,6 +37,40 @@ export async function verifyAdminOtpChallenge(token: string) {
   }
 }
 
+export type PascaInquiryPayload = {
+  userId: number
+  productId: number
+  customerNo: string
+  refId: string
+  providerAmount: number
+  totalAmount: number
+}
+
+export async function signPascaInquiry(payload: PascaInquiryPayload) {
+  return new SignJWT({ ...payload, purpose: 'pasca-inquiry' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('15m')
+    .sign(SECRET)
+}
+
+export async function verifyPascaInquiry(token: string): Promise<PascaInquiryPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET)
+    if (payload.purpose !== 'pasca-inquiry') return null
+    return {
+      userId: Number(payload.userId),
+      productId: Number(payload.productId),
+      customerNo: String(payload.customerNo),
+      refId: String(payload.refId),
+      providerAmount: Number(payload.providerAmount),
+      totalAmount: Number(payload.totalAmount),
+    }
+  } catch {
+    return null
+  }
+}
+
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET)
@@ -44,6 +79,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
       userId: Number(raw.userId),
       phone: String(raw.phone ?? ''),
       role: String(raw.role ?? ''),
+      mfa: raw.mfa === true,
     }
   } catch {
     return null

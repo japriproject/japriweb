@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 export const requireAdmin = cache(async () => {
   const session = await getSession()
   if (!session) redirect('/admin/auth')
+  if (session.role === 'admin' && !session.mfa) redirect('/admin/auth')
 
   const rows = await prisma.$queryRaw<Array<{ id: number; name: string; phone: string; type: number }>>`
     SELECT id, name, phone, type
@@ -24,6 +25,7 @@ export const requireAdmin = cache(async () => {
 export async function getAdminSession() {
   const session = await getSession()
   if (!session) return null
+  if (session.role === 'admin' && !session.mfa) return null
 
   const rows = await prisma.$queryRaw<Array<{ id: number; name: string; phone: string; type: number }>>`
     SELECT id, name, phone, type

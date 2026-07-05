@@ -1,7 +1,13 @@
 import Link from 'next/link'
+import type { Viewport } from 'next'
 import { FileText, Gift, LayoutDashboard, Network, ReceiptText, Smartphone, Users, WalletCards } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin'
 import AdminLogout from './AdminLogout'
+
+export const viewport: Viewport = {
+  width: 1200,
+  initialScale: 1,
+}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin()
@@ -50,7 +56,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <AdminLogout />
           </div>
         </aside>
-        <main className="col-start-2 h-full min-w-0 overflow-y-auto">{children}</main>
+        <main className="col-start-2 h-full min-w-0 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">{children}</main>
       </div>
     </div>
   )

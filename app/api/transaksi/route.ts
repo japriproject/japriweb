@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getSession, verifyPascaInquiry } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rateLimit'
-import { digiflazzStatusToCode, getDigiflazzPascaAmount, sendDigiflazzTransaction } from '@/lib/digiflazz'
+import { digiflazzStatusToCode, sendDigiflazzTransaction } from '@/lib/digiflazz'
 import { normalizePhone, toInt } from '@/lib/money'
 import { z } from 'zod'
 
@@ -10,6 +10,7 @@ const schema = z.object({
   produkId: z.string().min(1),
   nomorTujuan: z.string().min(5).max(35),
   productType: z.enum(['prabayar', 'pasca']).default('prabayar'),
+  inquiryToken: z.string().min(20).optional(),
 })
 
 function generateInvoice() {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Data tidak valid' }, { status: 400 })
 
-  const { produkId, nomorTujuan, productType } = parsed.data
+  const { produkId, nomorTujuan, productType, inquiryToken } = parsed.data
   const productId = Number(produkId)
   if (!Number.isInteger(productId)) {
     return NextResponse.json({ error: 'Produk tidak valid' }, { status: 400 })
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
   let hargaJual = 0
   let hargaProvider = 0
   let kodeProduk = ''
+  let invoice = generateInvoice()
 
   if (productType === 'pasca') {
     const pascaItem = await prisma.pasca.findUnique({ where: { id: productId } })
@@ -45,19 +47,16 @@ export async function POST(req: NextRequest) {
     produkNama = pascaItem.name
     kodeProduk = pascaItem.code
 
-    const inquiry = await sendDigiflazzTransaction({
-      buyerSkuCode: kodeProduk,
-      customerNo: normalizePhone(nomorTujuan) || nomorTujuan,
-      refId: `INQ${Date.now()}${Math.floor(Math.random() * 1000)}`,
-      command: 'inq-pasca',
-    })
-
-    hargaProvider = toInt(getDigiflazzPascaAmount(inquiry))
-    const margin = Math.max(0, toInt(pascaItem.sale) - toInt(pascaItem.price))
-    hargaJual = hargaProvider + margin
-    if (hargaJual <= 0) {
-      return NextResponse.json({ error: inquiry.message || 'Tagihan tidak valid' }, { status: 400 })
+    if (!inquiryToken) return NextResponse.json({ error: 'Cek tagihan terlebih dahulu' }, { status: 400 })
+    const inquiry = await verifyPascaInquiry(inquiryToken)
+    const normalizedCustomer = normalizePhone(nomorTujuan) || nomorTujuan
+    if (!inquiry || inquiry.userId !== Number(session.userId) || inquiry.productId !== productId || inquiry.customerNo !== normalizedCustomer) {
+      return NextResponse.json({ error: 'Data tagihan tidak valid atau sudah kedaluwarsa. Silakan cek ulang.' }, { status: 400 })
     }
+    hargaProvider = toInt(inquiry.providerAmount)
+    hargaJual = toInt(inquiry.totalAmount)
+    invoice = inquiry.refId
+    if (hargaJual <= 0 || hargaProvider <= 0) return NextResponse.json({ error: 'Nominal tagihan tidak valid' }, { status: 400 })
   } else {
     const pulsaItem = await prisma.pulsa.findUnique({ where: { id: productId } })
     if (!pulsaItem) return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 })
@@ -76,9 +75,11 @@ export async function POST(req: NextRequest) {
   const saldoNow = toInt(member.sososo)
   if (saldoNow < hargaJual) return NextResponse.json({ error: 'Saldo tidak cukup' }, { status: 400 })
 
-  const invoice = generateInvoice()
-
   const trx = await prisma.$transaction(async (tx) => {
+    const existing = await tx.$queryRaw<Array<{ id: number }>>`
+      SELECT id FROM transaksi WHERE members = ${member.phone} AND invoice = ${invoice} LIMIT 1 FOR UPDATE
+    `
+    if (existing[0]) throw new Error('Tagihan sudah pernah diproses')
     const updated = await tx.$executeRaw`
       UPDATE members
       SET sososo = sososo - ${hargaJual}
@@ -108,11 +109,11 @@ export async function POST(req: NextRequest) {
       },
     })
   }).catch((error) => {
-    if (error instanceof Error && error.message === 'Saldo tidak cukup') return null
+    if (error instanceof Error && (error.message === 'Saldo tidak cukup' || error.message === 'Tagihan sudah pernah diproses')) return error.message
     throw error
   })
 
-  if (!trx) return NextResponse.json({ error: 'Saldo tidak cukup' }, { status: 400 })
+  if (typeof trx === 'string') return NextResponse.json({ error: trx }, { status: trx === 'Tagihan sudah pernah diproses' ? 409 : 400 })
 
   try {
     const result = await sendDigiflazzTransaction({
@@ -120,11 +121,11 @@ export async function POST(req: NextRequest) {
       customerNo: normalizePhone(nomorTujuan) || nomorTujuan,
       refId: invoice,
       command: productType === 'pasca' ? 'pay-pasca' : undefined,
-      maxPrice: hargaJual,
+      maxPrice: productType === 'pasca' ? hargaProvider : hargaJual,
     })
 
     const providerStatus = digiflazzStatusToCode(result.status)
-    const status = providerStatus === 2 ? 2 : 0
+    const status = providerStatus
     await prisma.$transaction(async (tx) => {
       await tx.transaksi.update({
         where: { id: trx.id },
@@ -151,8 +152,8 @@ export async function POST(req: NextRequest) {
       invoice: trx.invoice,
       produk: produkNama,
       harga: hargaJual,
-      status: status === 2 ? 'Gagal' : 'Pending',
-      message: status === 2 ? (result.message || 'Transaksi gagal diproses') : 'Transaksi sedang diproses',
+      status: status === 2 ? 'Gagal' : status === 1 ? 'Sukses' : 'Pending',
+      message: result.message || (status === 1 ? 'Pembayaran berhasil' : status === 2 ? 'Transaksi gagal diproses' : 'Transaksi sedang diproses'),
       sn: status === 2 ? null : result.sn,
     }, { status: 201 })
   } catch (error) {

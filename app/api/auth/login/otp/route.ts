@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (!admin || !await verifyAdminTotp(parsed.data.code, admin.secret)) return NextResponse.json({ error: 'Kode Google Authenticator salah' }, { status: 401 })
   if (challenge.setup && admin.enabled !== 1) await enableAdminTotp(admin.id)
 
-  const token = await signToken({ userId: admin.id, phone: admin.phone, role: 'admin' })
+  const token = await signToken({ userId: admin.id, phone: admin.phone, role: 'admin', mfa: true })
   await prisma.$executeRaw`UPDATE members SET login_status = 1, date_login = NOW() WHERE id = ${admin.id}`
   const response = NextResponse.json({ message: 'Login admin berhasil', role: 'admin' })
   response.cookies.set(setTokenCookie(token))

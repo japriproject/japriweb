@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendDigiflazzTransaction, getDigiflazzPascaAmount } from '@/lib/digiflazz'
+import { signPascaInquiry } from '@/lib/auth'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -35,9 +36,22 @@ export async function POST(req: NextRequest) {
     })
     const providerAmount = getDigiflazzPascaAmount(result)
     const margin = Math.max(0, Number(pascaItem.sale) - Number(pascaItem.price))
+    if (result.status.toLowerCase() === 'gagal' || providerAmount <= 0) {
+      return NextResponse.json({ error: result.message || 'Tagihan tidak ditemukan' }, { status: 422 })
+    }
+    const totalAmount = providerAmount + margin
+    const inquiryToken = await signPascaInquiry({
+      userId: Number(session.userId),
+      productId: produkId,
+      customerNo: parsed.data.nomorPelanggan,
+      refId,
+      providerAmount,
+      totalAmount,
+    })
 
     return NextResponse.json({
       refId,
+      inquiryToken,
       productCode: pascaItem.code,
       productName: pascaItem.name,
       brand: pascaItem.brand,
@@ -52,7 +66,7 @@ export async function POST(req: NextRequest) {
       sellingPrice: result.selling_price ?? 0,
       providerAmount,
       margin,
-      totalAmount: providerAmount + margin,
+      totalAmount,
       desc: result.desc ?? null,
       raw: result,
     })
