@@ -7,13 +7,15 @@ import AdminLogout from './AdminLogout'
 export const viewport: Viewport = {
   width: 1200,
   initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin()
 
   return (
-    <div className="admin-shell fixed inset-0 z-50 overflow-auto overscroll-contain bg-slate-950 text-slate-100">
+    <div className="admin-shell relative z-50 min-h-screen min-w-[1200px] overflow-visible bg-slate-950 text-slate-100">
       <div className="grid min-h-full min-w-[1200px] grid-cols-[260px_minmax(0,1fr)]">
         <aside className="sticky top-0 h-screen w-[260px] border-r border-white/10 bg-slate-950/95">
           <div className="flex h-20 items-center gap-3 px-5">

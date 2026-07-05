@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import SiteShell from './SiteShell'
 
 export const metadata: Metadata = {
   title: 'Japri Pay',
@@ -9,16 +10,15 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id">
       <body className="bg-gray-50 min-h-screen antialiased">
-        <div className="mx-auto max-w-md min-h-screen relative bg-white shadow-lg">
-          {children}
-        </div>
+        <SiteShell>{children}</SiteShell>
       </body>
     </html>
   )
