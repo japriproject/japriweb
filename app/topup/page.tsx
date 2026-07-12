@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
+import MobileTopBar from '@/components/MobileTopBar'
 import { formatRupiah } from '@/lib/utils'
-import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, Wallet, Home, QrCode, Building2, ChevronDown, Copy } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, Wallet, Home, QrCode, Building2, ChevronDown, Copy } from 'lucide-react'
 
 const NOMINAL = [10000, 20000, 50000, 100000, 200000, 500000]
 const ADMIN_FEE = 3500
@@ -264,17 +265,7 @@ export default function TopupPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 safe-pb">
-      <div className="gradient-success px-5 pt-12 pb-6 text-white relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
-        <div className="absolute bottom-0 left-0 right-0 h-5 bg-slate-50 rounded-t-3xl" />
-        <div className="relative z-10">
-          <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 text-white/60 text-sm font-medium">
-            <ArrowLeft size={16} /> Kembali
-          </button>
-          <h1 className="text-xl font-bold">Top Up Saldo</h1>
-          <p className="text-white/60 text-sm mt-0.5 font-medium">Isi saldo untuk bertransaksi</p>
-        </div>
-      </div>
+      <MobileTopBar title="Top Up Saldo" subtitle="Isi saldo untuk bertransaksi" accent="emerald" />
 
       <div className="flex-1 px-4 py-4 space-y-3.5">
         <div className="bg-white rounded-2xl p-4 card-shadow border border-gray-100/80">

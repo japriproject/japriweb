@@ -9,9 +9,9 @@ import Link from 'next/link'
 type Bonus = {
   id: number
   invoice: string
-  desc: string
-  sale: number
-  created_at: string
+  produk: { nama: string }
+  harga: number
+  createdAt: string
 }
 
 export default function RiwayatBonusPage() {
@@ -20,11 +20,10 @@ export default function RiwayatBonusPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/transaksi?type=6')
-      .then(r => r.ok ? r.json() : { bonuses: [] })
+    fetch('/api/transaksi?type=7')
+      .then(r => r.ok ? r.json() : { data: [] })
       .then(d => { 
-        const data = Array.isArray(d) ? d : (d.bonuses || [])
-        setBonuses(data)
+        setBonuses(Array.isArray(d) ? d : (d.data || []))
         setLoading(false) 
       })
       .catch(() => setLoading(false))
@@ -60,23 +59,25 @@ export default function RiwayatBonusPage() {
             <p className="text-gray-400 text-sm mt-1">Bonus akan muncul di sini ketika kamu menerimanya</p>
           </div>
         ) : (
-          bonuses.map((bonus: Bonus) => (
-            <Link key={bonus.id} href={`/transaksi/${bonus.id}`}
-              className="bg-white rounded-2xl p-4 card-shadow border border-gray-100/80 hover:shadow-lg hover:border-violet-200/50 transition-all active:scale-95">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
-                  <Gift size={20} className="text-amber-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{bonus.desc || 'Bonus'}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{formatDate(bonus.created_at)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-amber-600">+{formatRupiah(bonus.sale)}</p>
-                </div>
-              </div>
-            </Link>
-          ))
+          <div className="bg-white rounded-2xl card-shadow border border-gray-100/80 overflow-hidden">
+            <div className="divide-y divide-gray-50">
+              {bonuses.map((bonus: Bonus) => (
+                <Link key={bonus.id} href={`/transaksi/${bonus.id}`}
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50/60 transition-colors active:scale-95">
+                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+                    <Gift size={16} className="text-amber-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{bonus.produk?.nama || 'Bonus'}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{formatDate(bonus.createdAt)}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-amber-600">+{formatRupiah(bonus.harga)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

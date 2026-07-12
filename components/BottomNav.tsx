@@ -1,17 +1,16 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Gift, Store, Clock, User } from 'lucide-react'
+import { Home, Gift, Clock, User } from 'lucide-react'
 
 const navs = [
   { href: '/dashboard', label: 'Beranda', icon: Home },
   { href: '/bonus', label: 'Bonus', icon: Gift },
-  { href: '/toko', label: 'Toko', icon: Store },
   { href: '/riwayat', label: 'Riwayat', icon: Clock },
   { href: '/profil', label: 'Profil', icon: User },
 ]
 
-const allowedPaths = ['/dashboard', '/bonus', '/toko', '/riwayat', '/profil']
+const allowedPaths = ['/dashboard', '/bonus', '/riwayat', '/profil']
 
 export default function BottomNav() {
   const pathname = usePathname()

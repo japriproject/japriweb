@@ -54,7 +54,7 @@ export default function RiwayatPage() {
   const fetchData = useCallback(async (p: number) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/transaksi?page=${p}`)
+      const res = await fetch(`/api/transaksi?page=${p}&exclude_type=7`)
       if (!res.ok) throw new Error()
       const json = await res.json()
       setData(json.data ?? [])

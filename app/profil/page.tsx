@@ -1,14 +1,24 @@
 'use client'
-import { useState, useEffect } from 'react'
+
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
-import { formatRupiah, formatDate } from '@/lib/utils'
+import { formatRupiah } from '@/lib/utils'
 import {
-  Smartphone, PlusCircle, Loader2, Receipt, Star, Shield,
-  HelpCircle, FileText, LogOut, ChevronRight, Wallet, Mail
+  ChevronRight, FileText, HelpCircle, Loader2, LogOut, Mail,
+  PlusCircle, Shield, Smartphone, Star, Users, Wallet,
 } from 'lucide-react'
 
-type User = { id: string; nama: string; noHp: string; email: string | null; emailVerified: boolean; saldo: number; role: string; createdAt: string }
+type User = {
+  id: string
+  nama: string
+  noHp: string
+  email: string | null
+  emailVerified: boolean
+  saldo: number
+  role: string
+  createdAt: string
+}
 
 export default function ProfilPage() {
   const router = useRouter()
@@ -18,8 +28,11 @@ export default function ProfilPage() {
 
   useEffect(() => {
     fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.id) setUser(d); setLoading(false) })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (data?.id) setUser(data)
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [])
 
@@ -30,117 +43,99 @@ export default function ProfilPage() {
     router.refresh()
   }
 
-  const menuItems = [
-    { label: 'Update Profile', href: '/profil/edit', icon: Smartphone, color: 'text-violet-500 bg-violet-50' },
-    { label: user?.emailVerified ? 'Email Terverifikasi' : 'Verifikasi Email', href: '/profil/email', icon: Mail, color: user?.emailVerified ? 'text-emerald-500 bg-emerald-50' : 'text-amber-500 bg-amber-50' },
-    { label: 'Riwayat Bonus', href: '/riwayat-bonus', icon: Star, color: 'text-amber-500 bg-amber-50' },
-  ]
-
-  const infoMenus = [
-    { label: 'Bantuan & FAQ', href: '/support', icon: HelpCircle, color: 'text-sky-500 bg-sky-50' },
-    { label: 'Syarat & Ketentuan', href: '/syarat-ketentuan', icon: FileText, color: 'text-gray-500 bg-gray-100' },
-    { label: 'Kebijakan Privasi', href: '/kebijakan-privasi', icon: Shield, color: 'text-emerald-500 bg-emerald-50' },
-  ]
-
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f7fb]">
       <Loader2 size={28} className="animate-spin text-violet-500" />
     </div>
   )
 
-  const saldo = user?.saldo ?? 0
+  const menuItems = [
+    { label: 'Edit profil', description: 'Nama, nomor HP, dan data akun', href: '/profil/edit', icon: Smartphone, color: 'bg-violet-100 text-violet-600' },
+    { label: user?.emailVerified ? 'Email terverifikasi' : 'Verifikasi email', description: user?.email || 'Tambahkan keamanan akun', href: '/profil/email', icon: Mail, color: user?.emailVerified ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600' },
+    { label: 'Mitra saya', description: 'Lihat jaringan mitra level 1–5', href: '/mitra', icon: Users, color: 'bg-sky-100 text-sky-600' },
+    { label: 'Riwayat bonus', description: 'Cek bonus yang sudah diterima', href: '/riwayat-bonus', icon: Star, color: 'bg-amber-100 text-amber-600' },
+  ]
+  const infoMenus = [
+    { label: 'Bantuan & FAQ', description: 'Pusat bantuan Japri Pay', href: '/support', icon: HelpCircle, color: 'bg-blue-100 text-blue-600' },
+    { label: 'Syarat & ketentuan', description: 'Ketentuan penggunaan layanan', href: '/syarat-ketentuan', icon: FileText, color: 'bg-slate-100 text-slate-600' },
+    { label: 'Kebijakan privasi', description: 'Cara kami melindungi data Anda', href: '/kebijakan-privasi', icon: Shield, color: 'bg-emerald-100 text-emerald-600' },
+  ]
   const initial = user?.nama.charAt(0).toUpperCase() ?? '?'
 
-  return (
-    <div className="flex flex-col min-h-screen bg-slate-50 safe-pb">
-      {/* Header */}
-      <div className="gradient-primary px-5 pt-12 pb-24 text-white relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/[0.04] rounded-full" />
-        <div className="absolute top-8 right-16 w-20 h-20 bg-white/[0.06] rounded-full" />
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <div className="relative mb-3">
-            <div className="w-20 h-20 gradient-dark rounded-2xl flex items-center justify-center text-3xl font-bold border border-white/20">
-              {initial}
-            </div>
-            {user?.role === 'ADMIN' && (
-              <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-amber-400 rounded-lg flex items-center justify-center shadow-lg">
-                <Star size={14} fill="white" className="text-white" strokeWidth={0} />
-              </div>
-            )}
+  const renderMenu = (items: typeof menuItems) => (
+    <div className="overflow-hidden rounded-[24px] bg-white shadow-sm ring-1 ring-black/[0.04]">
+      {items.map(({ label, description, href, icon: Icon, color }, index) => (
+        <button key={href} onClick={() => router.push(href)}
+          className={`btn-press flex min-h-[72px] w-full items-center gap-4 px-4 text-left transition-colors hover:bg-gray-50 active:bg-gray-100 ${index ? 'border-t border-gray-100' : ''}`}>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${color}`}>
+            <Icon size={18} />
           </div>
-          <h2 className="text-xl font-bold">{user?.nama}</h2>
-          <p className="text-white/60 text-sm mt-0.5 font-medium">{user?.noHp}</p>
-          {user?.role === 'ADMIN' && (
-            <div className="mt-2 flex items-center gap-1.5 bg-amber-400/20 border border-amber-400/30 px-3 py-1 rounded-full">
-              <Shield size={11} className="text-amber-300" />
-              <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">Administrator</span>
-            </div>
-          )}
-        </div>
-      </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-gray-900">{label}</p>
+            <p className="mt-0.5 truncate text-xs text-gray-500">{description}</p>
+          </div>
+          <ChevronRight size={18} className="shrink-0 text-gray-300" />
+        </button>
+      ))}
+    </div>
+  )
 
-      <div className="px-4 -mt-14 relative z-10 space-y-3.5">
-        {/* Saldo */}
-        <div className="bg-white rounded-2xl p-5 card-shadow border border-white/80">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Saldo Aktif</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatRupiah(saldo)}</p>
+  return (
+    <div className="flex min-h-screen flex-col bg-[#f7f7fb] safe-pb">
+      <header className="gradient-primary relative overflow-hidden px-5 pb-7 pt-12 text-white">
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/[0.05]" />
+        <div className="relative z-10">
+          <h1 className="mb-6 text-xl font-bold">Profil</h1>
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="gradient-dark flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/25 text-2xl font-bold shadow-lg">{initial}</div>
+              {user?.role === 'ADMIN' && (
+                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 ring-2 ring-violet-600">
+                  <Star size={12} fill="white" strokeWidth={0} />
+                </div>
+              )}
             </div>
-            <div className="w-12 h-12 gradient-primary rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
-              <Wallet size={22} className="text-white" />
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-lg font-bold">{user?.nama}</h2>
+              <p className="mt-0.5 text-sm font-medium text-white/70">{user?.noHp}</p>
+              {user?.role === 'ADMIN' && <span className="mt-2 inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">Administrator</span>}
             </div>
           </div>
-          <button onClick={() => router.push('/topup')}
-            className="w-full py-3 gradient-primary text-white text-sm font-bold rounded-xl shadow-md shadow-violet-500/20 btn-press flex items-center justify-center gap-2">
-            <PlusCircle size={15} /> Top Up Saldo
+        </div>
+      </header>
+
+      <main className="flex-1 space-y-6 px-4 py-5 pb-24">
+        <div className="flex items-center gap-4 rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-black/[0.04]">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-600"><Wallet size={22} /></div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-500">Saldo aktif</p>
+            <p className="mt-0.5 truncate text-xl font-bold text-gray-900">{formatRupiah(user?.saldo ?? 0)}</p>
+          </div>
+          <button onClick={() => router.push('/topup')} className="btn-press flex min-h-11 items-center gap-1.5 rounded-full bg-violet-600 px-4 text-sm font-bold text-white shadow-md shadow-violet-200">
+            <PlusCircle size={16} /> Isi
           </button>
         </div>
 
-        {/* Menu */}
-        <div className="bg-white rounded-2xl card-shadow border border-white/80 overflow-hidden">
-          <div className="divide-y divide-gray-50">
-            {menuItems.map(({ label, href, icon: Icon, color }) => (
-              <button key={href} onClick={() => router.push(href)}
-                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50/60 active:bg-gray-100 transition-colors btn-press">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-                  <Icon size={16} />
-                </div>
-                <span className="flex-1 text-sm font-semibold text-gray-700 text-left">{label}</span>
-                <ChevronRight size={15} className="text-gray-300" />
-              </button>
-            ))}
-          </div>
+        <section>
+          <h3 className="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-gray-400">Akun</h3>
+          {renderMenu(menuItems)}
+        </section>
+
+        <section>
+          <h3 className="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-gray-400">Informasi</h3>
+          {renderMenu(infoMenus)}
+        </section>
+
+        <div className="overflow-hidden rounded-[24px] bg-white shadow-sm ring-1 ring-black/[0.04]">
+          <button onClick={handleLogout} disabled={loggingOut} className="btn-press flex min-h-14 w-full items-center gap-4 px-4 text-left text-red-600 active:bg-red-50 disabled:opacity-60">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+              {loggingOut ? <Loader2 size={18} className="animate-spin" /> : <LogOut size={18} />}
+            </div>
+            <span className="flex-1 text-sm font-semibold">{loggingOut ? 'Keluar...' : 'Keluar dari akun'}</span>
+          </button>
         </div>
-
-        {/* Info */}
-        <div className="bg-white rounded-2xl card-shadow border border-white/80 overflow-hidden">
-          <div className="divide-y divide-gray-50">
-            {infoMenus.map(({ label, href, icon: Icon, color }) => (
-              <button key={label} onClick={() => router.push(href)}
-                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50/60 transition-colors btn-press">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-                  <Icon size={16} />
-                </div>
-                <span className="flex-1 text-sm font-semibold text-gray-700 text-left">{label}</span>
-                <ChevronRight size={15} className="text-gray-300" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Logout */}
-        <button onClick={handleLogout} disabled={loggingOut}
-          className="w-full py-4 bg-white border-2 border-red-100 text-red-500 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-red-50 btn-press card-shadow disabled:opacity-60">
-          {loggingOut ? <Loader2 size={18} className="animate-spin" /> : <LogOut size={18} />}
-          {loggingOut ? 'Keluar...' : 'Keluar dari Akun'}
-        </button>
-
-        <p className="text-center text-[11px] text-gray-300 font-medium pb-2">
-          Japri Pay v1.0 · Aman & Terpercaya 🔒
-        </p>
-      </div>
-
+        <p className="pb-2 text-center text-[11px] font-medium text-gray-300">Japri Pay v1.0</p>
+      </main>
       <BottomNav />
     </div>
   )

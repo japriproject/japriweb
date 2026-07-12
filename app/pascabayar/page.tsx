@@ -3,12 +3,12 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
+import MobileTopBar from '@/components/MobileTopBar'
 import CustomerInput from '@/components/CustomerInput'
 import { formatRupiah } from '@/lib/utils'
 import {
-  ArrowLeft, Zap, CreditCard, Droplets, Phone, Tv, Receipt,
+  Zap, CreditCard, Droplets, Phone, Tv, Receipt,
   Wifi, ShoppingBag, CheckCircle2, Loader2, AlertCircle, Search,
-  Wallet,
 } from 'lucide-react'
 
 type ProdukPasca = { id: string; nama: string; hargaJual: number; operator: string; kategori: string }
@@ -186,25 +186,8 @@ function PascabayarContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 safe-pb">
-      <div className={`bg-gradient-to-br ${activeTipe.gradient} px-5 pt-12 pb-6 text-white relative overflow-hidden`}>
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
-        <div className="absolute bottom-0 left-0 right-0 h-6 bg-slate-50 rounded-t-3xl" />
-        <div className="relative z-10">
-          <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 text-white/60 text-sm font-medium">
-            <ArrowLeft size={16} /> Kembali
-          </button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">Bayar Tagihan</h1>
-              <p className="text-white/60 text-sm mt-0.5 font-medium">Pascabayar · Cek & Bayar</p>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-xl border border-white/20">
-              <Wallet size={14} />
-              <span className="text-sm font-bold">{formatRupiah(saldo)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MobileTopBar title="Bayar Tagihan" subtitle="Pascabayar · Cek & bayar"
+        trailing={<span className="rounded-full bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700">{formatRupiah(saldo)}</span>} />
 
       <div className="flex-1 px-4 py-4 space-y-3.5">
         <div className="bg-white rounded-2xl p-4 card-shadow border border-gray-100/80">

@@ -5,6 +5,7 @@ import SiteShell from './SiteShell'
 export const metadata: Metadata = {
   title: 'Japri Pay',
   description: 'Aplikasi Pulsa & Paket Data',
+  icons: { icon: '/logo.png' },
 }
 
 export const viewport: Viewport = {

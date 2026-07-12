@@ -194,21 +194,29 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'))
   const limit = 10
   const skip = (page - 1) * limit
+  const typeParam = searchParams.get('type')
+  const excludeTypeParam = searchParams.get('exclude_type')
+  const where = {
+    members: memberGet.phone,
+    ...(typeParam !== null ? { type: parseInt(typeParam) } : {}),
+    ...(excludeTypeParam !== null ? { NOT: { type: parseInt(excludeTypeParam) } } : {}),
+  }
 
   const [data, total] = await prisma.$transaction([
     prisma.transaksi.findMany({
-      where: { members: memberGet.phone },
+      where,
       orderBy: { created_at: 'desc' },
       skip,
       take: limit,
     }),
-    prisma.transaksi.count({ where: { members: memberGet.phone } }),
+    prisma.transaksi.count({ where }),
   ])
 
   const mapped = data.map(t => ({
     id: t.id,
     nomorTujuan: t.customers,
     harga: t.sale,
+    claim: t.claim,
     status: t.status === 1 ? 'SUKSES' : t.status === 0 ? 'PENDING' : 'GAGAL',
     createdAt: t.created_at,
     produk: {
