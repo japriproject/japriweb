@@ -7,6 +7,7 @@ const PUBLIC = [
   '/register',
   '/forgot-password',
   '/reset-password',
+  '/tutorial',
   '/verify-email',
   '/api/auth/login',
   '/api/auth/register',
